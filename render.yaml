@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: model-lab-api
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: OWNER_EMAIL
+        sync: false
+      - key: REGISTRATION_TOKEN
+        sync: false
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: COOKIE_SECURE
+        value: true
+      - key: SESSION_DAYS
+        value: 30
+      - key: ALLOW_REGISTRATION
+        value: true

@@ -1,7 +1,13 @@
 venv/
+.venv/
 .env
+.env.*
+!.env.example
 __pycache__/
-*.pyc
+*.py[cod]
 .DS_Store
-*.pyc
-*.pyo
+node_modules/
+.next/
+backend/data/
+.pytest_cache/
+.vercel/
