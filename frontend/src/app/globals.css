@@ -112,7 +112,7 @@ tr:last-child td { border-bottom: 0; }
 .art-a { left: 0; top: 14px; transform: rotate(-5deg); }
 .art-b { right: 0; bottom: 18px; transform: rotate(4deg); }
 .auth-panel { display: grid; place-items: center; padding: 38px; background: rgba(251,250,253,.8); }
-.auth-box { width: min(440px,100%); }
+.auth-box { width: min(480px,100%); }
 .auth-box h2 { margin: 0; font-size: 33px; letter-spacing: -.045em; }
 .auth-copy { margin: 9px 0 25px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .auth-form { display: grid; gap: 15px; }
@@ -124,9 +124,27 @@ tr:last-child td { border-bottom: 0; }
 .field textarea { min-height: 96px; resize: vertical; }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: rgba(115,87,246,.6); background: white; box-shadow: 0 0 0 4px rgba(115,87,246,.09); }
 .field small { color: #9b98a7; font-size: 9px; font-weight: 500; }
-.password-field { position: relative; }
-.password-field input { padding-right: 42px; }
-.password-field button { position: absolute; right: 7px; top: 6px; width: 32px; height: 32px; display: grid; place-items: center; color: #858293; border: 0; background: transparent; cursor: pointer; }
+.password-control { min-width: 0; }
+.password-control input { min-height: 50px; padding-right: 54px; font-size: 16px; scroll-margin-block: 100px; }
+.password-label-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.password-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; border: 0; background: transparent; color: var(--violet); cursor: pointer; font-size: 14px; }
+.password-toggle:focus-visible, .auth-back:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; border-radius: 4px; }
+.auth-form .field { font-size: 14px; }
+.auth-form .field small { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.auth-form input, .auth-form textarea { font-size: 16px; }
+.auth-form { gap: 20px; }
+.auth-copy, .auth-switch { font-size: 14px; }
+.password-help, .recovery-help { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.recovery-help summary { cursor: pointer; }
+.auth-back { border: 0; background: transparent; color: var(--violet); display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.recovery-code-box { display: grid; gap: 14px; padding: 20px; background: var(--violet-soft, #f1edff); border: 1px solid rgba(115,87,246,.2); border-radius: 16px; }
+.recovery-code-box h3, .recovery-code-box p { margin: 0; }
+.recovery-code-box p, .recovery-settings > p { font-size: 14px; line-height: 1.6; color: var(--muted); }
+.recovery-code-box textarea, .recovery-code-input { font-family: var(--font-mono), monospace; font-size: 14px; overflow-wrap: anywhere; }
+.recovery-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.recovery-saved { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.recovery-saved input { width: 18px; height: 18px; accent-color: var(--violet); }
+.recovery-continue { justify-content: center; text-decoration: none; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-submit { justify-content: center; min-height: 43px; margin-top: 3px; }
 .form-submit:disabled { opacity: .65; cursor: wait; }

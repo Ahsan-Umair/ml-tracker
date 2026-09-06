@@ -7,6 +7,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useAuth, User } from "@/components/providers";
 import { api, messageOf } from "@/lib/api";
 import { ErrorNotice, Field, SubmitButton } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export default function RegisterPage() {
           <h2>Start tracking smarter</h2>
           <p className="auth-copy">
             This is a private workspace. Use your owner email and private setup
-            code to create your account. Your password is protected with Argon2id.
+            code to create your account.
           </p>
           <form className="auth-form" onSubmit={submit}>
             {error && <ErrorNotice message={error} />}
@@ -88,43 +89,23 @@ export default function RegisterPage() {
                 placeholder="Ahsan Umair"
                 minLength={2}
                 required
-                autoFocus
               />
             </Field>
             <Field label="Email">
               <input
                 name="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="username"
                 placeholder="you@example.com"
                 required
               />
             </Field>
-            <Field label="Private setup code" hint="Required for the hosted workspace. Leave blank only for local development.">
-              <input name="setup_code" type="password" autoComplete="off" maxLength={256} placeholder="Your private setup code" />
+            <Field label="Private setup code" hint="The invitation code provided for this workspace.">
+              <textarea name="setup_code" className="recovery-code-input" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={256} placeholder="Your private setup code" />
             </Field>
-            <div className="form-grid">
-              <Field label="Password">
-                <input
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="12+ characters"
-                  minLength={12}
-                  required
-                />
-              </Field>
-              <Field label="Confirm">
-                <input
-                  name="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Repeat password"
-                  minLength={12}
-                  required
-                />
-              </Field>
-            </div>
+            <PasswordInput name="password" label="Password" autoComplete="new-password" minLength={12} hint="Use 12–128 characters. Save your password in your password manager." />
+            <PasswordInput name="confirm" label="Confirm password" autoComplete="new-password" minLength={12} />
+            <p className="password-help">If iCloud Passwords covers a field, press Esc to close its suggestion menu.</p>
             <SubmitButton pending={pending}>
               Create account <ArrowRight size={15} />
             </SubmitButton>

@@ -32,6 +32,21 @@ SCHEMA: tuple[str, ...] = (
         expires_at TEXT NOT NULL,
         created_at TEXT NOT NULL
     )""",
+    """CREATE TABLE IF NOT EXISTS recovery_credentials (
+        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )""",
+    """CREATE TABLE IF NOT EXISTS recovery_bootstraps (
+        code_hash TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL
+    )""",
+    """CREATE TABLE IF NOT EXISTS recovery_attempts (
+        identity_hash TEXT PRIMARY KEY,
+        attempts INTEGER NOT NULL,
+        window_start INTEGER NOT NULL
+    )""",
     """CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

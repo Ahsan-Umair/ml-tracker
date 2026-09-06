@@ -6,7 +6,7 @@ from app.main import auth_attempts
 
 @pytest.fixture(autouse=True)
 def isolated_database(tmp_path, monkeypatch):
-    for key in ("TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN", "OWNER_EMAIL", "REGISTRATION_TOKEN", "LOCAL_DATABASE_PATH", "APP_ENV"):
+    for key in ("TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN", "OWNER_EMAIL", "REGISTRATION_TOKEN", "LOCAL_DATABASE_PATH", "APP_ENV", "OWNER_RECOVERY_CODE_HASH", "OWNER_RECOVERY_EXPIRES_AT"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("ALLOW_REGISTRATION", "true")
     monkeypatch.setenv("COOKIE_SECURE", "false")

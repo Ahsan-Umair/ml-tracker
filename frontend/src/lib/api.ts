@@ -17,7 +17,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const method = (options.method || "GET").toUpperCase();
   const headers = new Headers(options.headers);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  if (!["GET", "HEAD", "OPTIONS"].includes(method) && !path.endsWith("/login") && !path.endsWith("/register")) {
+  if (!["GET", "HEAD", "OPTIONS"].includes(method) && !["/auth/login", "/auth/register", "/auth/recover"].includes(path)) {
     headers.set("X-CSRF-Token", await getCsrfToken());
   }
   const response = await fetch(`/api${path}`, { ...options, headers, credentials: "include", cache: "no-store" });

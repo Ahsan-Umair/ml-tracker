@@ -16,11 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .database import execute, initialize_database, one, query
+from .recovery import bootstrap_owner_recovery, recover_account, replace_recovery_code
 from .schemas import (
     DatasetInput,
     ExperimentInput,
     ExperimentStatusInput,
     LoginInput,
+    RecoveryInput,
+    RecoveryCodeInput,
     MetricInput,
     ModelInput,
     ModelVersionInput,
@@ -75,6 +78,7 @@ async def lifespan(_: FastAPI):
         if not os.getenv("OWNER_EMAIL") or len(os.getenv("REGISTRATION_TOKEN", "")) < 32:
             raise RuntimeError("Production requires OWNER_EMAIL and a strong REGISTRATION_TOKEN")
     initialize_database()
+    bootstrap_owner_recovery()
     execute("DELETE FROM sessions WHERE expires_at <= ?", (iso(),))
     yield
 
@@ -145,6 +149,18 @@ def health() -> dict[str, str]:
 
 
 # Authentication
+@app.post("/api/auth/recover")
+def recover(payload: RecoveryInput, response: Response):
+    result = recover_account(str(payload.email), payload.recovery_code, payload.password)
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return result
+
+
+@app.post("/api/auth/recovery-code")
+def recovery_code(payload: RecoveryCodeInput, user: MutatingUser):
+    return replace_recovery_code(user.id, user.email, payload.password)
+
+
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterInput, response: Response, request: Request):
     if os.getenv("ALLOW_REGISTRATION", "true").lower() in {"0", "false", "no"}:

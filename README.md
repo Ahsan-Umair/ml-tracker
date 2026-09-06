@@ -88,7 +88,26 @@ The repository includes `render.yaml`.
 5. Set `APP_ENV=production`, `OWNER_EMAIL` to your email, and `REGISTRATION_TOKEN` to a
    private random setup code of at least 32 characters. Share the code with the owner only.
 6. Register with the owner email and setup code, then set `ALLOW_REGISTRATION=false`.
-   Keep the password in your password manager; password-reset email is not implemented.
+   Keep the password in your password manager and create a recovery code in Settings.
+
+## Account recovery
+
+The sign-in page links to `/recover`. Enter the account email, private recovery code,
+and a new password. Successful recovery changes only the password, revokes all sessions,
+and replaces the consumed code with a new one shown once. Save or download it before
+leaving. Codes expire after one year; Settings can replace one after password confirmation.
+Recovery attempts are limited in the database, including across backend restarts.
+This flow uses the existing free services; no recovery email provider is configured.
+
+For an owner who has no code, issue an emergency code with
+`python scripts/issue_recovery_code.py` from `backend`. The helper only generates a
+random code and its hash; it does not access or modify a database. Put the two printed
+environment values (`OWNER_RECOVERY_CODE_HASH`, `OWNER_RECOVERY_EXPIRES_AT`) in the
+existing Render service and redeploy. Give the raw code privately to the owner.
+It expires after 24 hours. Never reuse the registration setup code. The database records
+each issued hash so a server restart cannot restore a consumed emergency code.
+The helper output is secret and must not be committed or pasted into build logs.
+Remove the two environment values after the owner has recovered their account.
 
 The health check is `/api/health`; API documentation is available at `/api/docs`.
 

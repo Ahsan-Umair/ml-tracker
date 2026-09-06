@@ -21,6 +21,16 @@ class LoginInput(StrictModel):
     password: Annotated[str, StringConstraints(strip_whitespace=False, min_length=1, max_length=128)]
 
 
+class RecoveryInput(StrictModel):
+    email: EmailStr
+    recovery_code: str = Field(min_length=1, max_length=256)
+    password: Annotated[str, StringConstraints(strip_whitespace=False, min_length=12, max_length=128)]
+
+
+class RecoveryCodeInput(StrictModel):
+    password: Annotated[str, StringConstraints(strip_whitespace=False, min_length=1, max_length=128)]
+
+
 class ProjectInput(StrictModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=2000)
