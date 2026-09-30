@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .database import execute, initialize_database, one, query
+from .database import DB_LOCK, connection, execute, initialize_database, one, query, read_connection
 from .recovery import bootstrap_owner_recovery, recover_account, replace_recovery_code
 from .schemas import (
     DatasetInput,
@@ -75,8 +75,11 @@ async def lifespan(_: FastAPI):
     if os.getenv("APP_ENV") == "production":
         if os.getenv("COOKIE_SECURE", "true").lower() in {"false", "0", "no"}:
             raise RuntimeError("Production requires secure cookies")
-        if not os.getenv("OWNER_EMAIL") or len(os.getenv("REGISTRATION_TOKEN", "")) < 32:
-            raise RuntimeError("Production requires OWNER_EMAIL and a strong REGISTRATION_TOKEN")
+        if not os.getenv("OWNER_EMAIL"):
+            raise RuntimeError("Production requires OWNER_EMAIL")
+        registration_open = os.getenv("ALLOW_REGISTRATION", "true").lower() not in {"0", "false", "no"}
+        if registration_open and len(os.getenv("REGISTRATION_TOKEN", "")) < 32:
+            raise RuntimeError("Open registration requires a strong REGISTRATION_TOKEN")
     initialize_database()
     bootstrap_owner_recovery()
     execute("DELETE FROM sessions WHERE expires_at <= ?", (iso(),))
@@ -144,8 +147,17 @@ async def browser_origin_guard(request: Request, call_next):
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    one("SELECT 1 AS ok")
+    # Render probes liveness frequently; these checks should not reconnect to Turso.
     return {"status": "healthy"}
+
+
+@app.get("/api/ready")
+def ready() -> dict[str, str]:
+    try:
+        one("SELECT 1 AS ok")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Database temporarily unavailable") from exc
+    return {"status": "ready"}
 
 
 # Authentication
@@ -214,39 +226,40 @@ def logout(request: Request, response: Response, _: MutatingUser):
 # Dashboard and analysis
 @app.get("/api/dashboard")
 def dashboard(user: CurrentUser):
-    stats = one(
-        """SELECT
-          (SELECT COUNT(*) FROM projects WHERE user_id=?) AS projects,
-          (SELECT COUNT(*) FROM model_versions WHERE user_id=?) AS model_versions,
-          (SELECT COUNT(*) FROM runs WHERE user_id=?) AS runs,
-          (SELECT MAX(value) FROM metrics WHERE user_id=? AND name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')) AS best_accuracy""",
-        (user.id, user.id, user.id, user.id),
-    )
-    recent_runs = query(
-        """SELECT r.id,r.name,r.status,r.started_at,r.ended_at,e.name AS experiment,
-          (SELECT MAX(m.value) FROM metrics m WHERE m.run_id=r.id AND m.name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')) AS score
-          FROM runs r JOIN experiments e ON e.id=r.experiment_id
-          WHERE r.user_id=? ORDER BY r.created_at DESC LIMIT 5""",
-        (user.id,),
-    )
-    trend = query(
-        """SELECT substr(logged_at,1,10) AS day, MAX(value) AS value
-          FROM metrics WHERE user_id=? AND name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')
-          GROUP BY substr(logged_at,1,10) ORDER BY day DESC LIMIT 14""",
-        (user.id,),
-    )
-    top_models = query(
-        """SELECT mo.id,mo.name,mo.framework,mo.status,p.name AS project,
-          MAX(me.value) AS score, COUNT(DISTINCT mv.id) AS versions
-          FROM models mo JOIN projects p ON p.id=mo.project_id
-          LEFT JOIN model_versions mv ON mv.model_id=mo.id
-          LEFT JOIN runs r ON r.model_version_id=mv.id
-          LEFT JOIN metrics me ON me.run_id=r.id AND me.name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')
-          WHERE mo.user_id=? GROUP BY mo.id,mo.name,mo.framework,mo.status,p.name
-          ORDER BY score DESC, mo.updated_at DESC LIMIT 6""",
-        (user.id,),
-    )
-    return {"stats": stats, "recentRuns": recent_runs, "trend": list(reversed(trend)), "topModels": top_models}
+    with read_connection() as reader:
+        stats = reader.one(
+            """SELECT
+              (SELECT COUNT(*) FROM projects WHERE user_id=?) AS projects,
+              (SELECT COUNT(*) FROM model_versions WHERE user_id=?) AS model_versions,
+              (SELECT COUNT(*) FROM runs WHERE user_id=?) AS runs,
+              (SELECT MAX(value) FROM metrics WHERE user_id=? AND name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')) AS best_accuracy""",
+            (user.id, user.id, user.id, user.id),
+        )
+        recent_runs = reader.query(
+            """SELECT r.id,r.name,r.status,r.started_at,r.ended_at,e.name AS experiment,
+              (SELECT MAX(m.value) FROM metrics m WHERE m.run_id=r.id AND m.name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')) AS score
+              FROM runs r JOIN experiments e ON e.id=r.experiment_id
+              WHERE r.user_id=? ORDER BY r.created_at DESC LIMIT 5""",
+            (user.id,),
+        )
+        trend = reader.query(
+            """SELECT substr(logged_at,1,10) AS day, MAX(value) AS value
+              FROM metrics WHERE user_id=? AND name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')
+              GROUP BY substr(logged_at,1,10) ORDER BY day DESC LIMIT 14""",
+            (user.id,),
+        )
+        top_models = reader.query(
+            """SELECT mo.id,mo.name,mo.framework,mo.status,p.name AS project,
+              MAX(me.value) AS score, COUNT(DISTINCT mv.id) AS versions
+              FROM models mo JOIN projects p ON p.id=mo.project_id
+              LEFT JOIN model_versions mv ON mv.model_id=mo.id
+              LEFT JOIN runs r ON r.model_version_id=mv.id
+              LEFT JOIN metrics me ON me.run_id=r.id AND me.name IN ('accuracy','val_accuracy','validation_accuracy','test_accuracy','val_acc','test_acc')
+              WHERE mo.user_id=? GROUP BY mo.id,mo.name,mo.framework,mo.status,p.name
+              ORDER BY score DESC, mo.updated_at DESC LIMIT 6""",
+            (user.id,),
+        )
+        return {"stats": stats, "recentRuns": recent_runs, "trend": list(reversed(trend)), "topModels": top_models}
 
 
 @app.get("/api/leaderboard")
@@ -267,15 +280,16 @@ def leaderboard(user: CurrentUser):
 
 @app.get("/api/analytics")
 def analytics(user: CurrentUser):
-    statuses = query("SELECT status,COUNT(*) AS count FROM runs WHERE user_id=? GROUP BY status", (user.id,))
-    frameworks = query("SELECT framework,COUNT(*) AS count FROM models WHERE user_id=? GROUP BY framework ORDER BY count DESC", (user.id,))
-    storage = query(
-        """SELECT p.name AS project,COUNT(d.id) AS datasets,COALESCE(SUM(d.size_bytes),0) AS bytes
-           FROM projects p LEFT JOIN datasets d ON d.project_id=p.id WHERE p.user_id=? GROUP BY p.id,p.name ORDER BY bytes DESC""",
-        (user.id,),
-    )
-    metric_names = query("SELECT name,COUNT(*) AS readings FROM metrics WHERE user_id=? GROUP BY name ORDER BY readings DESC LIMIT 12", (user.id,))
-    return {"runStatuses": statuses, "frameworks": frameworks, "storage": storage, "metricNames": metric_names}
+    with read_connection() as reader:
+        statuses = reader.query("SELECT status,COUNT(*) AS count FROM runs WHERE user_id=? GROUP BY status", (user.id,))
+        frameworks = reader.query("SELECT framework,COUNT(*) AS count FROM models WHERE user_id=? GROUP BY framework ORDER BY count DESC", (user.id,))
+        storage = reader.query(
+            """SELECT p.name AS project,COUNT(d.id) AS datasets,COALESCE(SUM(d.size_bytes),0) AS bytes
+               FROM projects p LEFT JOIN datasets d ON d.project_id=p.id WHERE p.user_id=? GROUP BY p.id,p.name ORDER BY bytes DESC""",
+            (user.id,),
+        )
+        metric_names = reader.query("SELECT name,COUNT(*) AS readings FROM metrics WHERE user_id=? GROUP BY name ORDER BY readings DESC LIMIT 12", (user.id,))
+        return {"runStatuses": statuses, "frameworks": frameworks, "storage": storage, "metricNames": metric_names}
 
 
 # Projects
@@ -461,6 +475,15 @@ def list_runs(user: CurrentUser, experiment_id: str | None = None):
     return rows
 
 
+def sync_experiment_status(conn: Any, experiment_id: str, updated_at: str) -> None:
+    # Active attempts keep the experiment running; archived experiments stay archived.
+    conn.execute("""UPDATE experiments SET status=CASE
+        WHEN EXISTS(SELECT 1 FROM runs WHERE experiment_id=experiments.id AND status IN ('queued','running')) THEN 'running'
+        WHEN EXISTS(SELECT 1 FROM runs WHERE experiment_id=experiments.id AND status='completed') THEN 'completed'
+        WHEN EXISTS(SELECT 1 FROM runs WHERE experiment_id=experiments.id AND status='failed') THEN 'failed'
+        ELSE 'draft' END, updated_at=? WHERE id=? AND status!='archived'""", (updated_at, experiment_id))
+
+
 @app.post("/api/runs", status_code=201)
 def create_run(payload: RunInput, user: MutatingUser):
     experiment = require_owned("experiments", payload.experiment_id, user.id)
@@ -471,21 +494,25 @@ def create_run(payload: RunInput, user: MutatingUser):
             raise HTTPException(status_code=422, detail="Model version must match the experiment's project and model")
     record_id, now = new_id("run"), iso()
     ended_at = now if payload.status in {"completed", "failed", "cancelled"} else None
-    execute(
-        "INSERT INTO runs(id,experiment_id,model_version_id,user_id,name,run_type,status,hyperparameters,environment,notes,started_at,ended_at,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (record_id,payload.experiment_id,payload.model_version_id,user.id,payload.name,payload.run_type,payload.status,json.dumps(payload.hyperparameters,separators=(",",":")),json.dumps(payload.environment,separators=(",",":")),payload.notes,now,ended_at,now),
-    )
-    execute("UPDATE experiments SET status='running',updated_at=? WHERE id=? AND status='draft'", (now,payload.experiment_id))
+    with DB_LOCK, connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "INSERT INTO runs(id,experiment_id,model_version_id,user_id,name,run_type,status,hyperparameters,environment,notes,started_at,ended_at,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (record_id,payload.experiment_id,payload.model_version_id,user.id,payload.name,payload.run_type,payload.status,json.dumps(payload.hyperparameters,separators=(",",":")),json.dumps(payload.environment,separators=(",",":")),payload.notes,now,ended_at,now),
+        )
+        sync_experiment_status(conn, payload.experiment_id, now)
     return one("SELECT * FROM runs WHERE id=?", (record_id,))
 
 
 @app.patch("/api/runs/{record_id}/status")
 def update_run_status(record_id: str, payload: RunStatusInput, user: MutatingUser):
     row = require_owned("runs", record_id, user.id)
-    ended = iso() if payload.status in {"completed", "failed", "cancelled"} else None
-    execute("UPDATE runs SET status=?,ended_at=? WHERE id=?", (payload.status,ended,record_id))
-    if payload.status == "completed":
-        execute("UPDATE experiments SET status='completed',updated_at=? WHERE id=?", (iso(),row["experiment_id"]))
+    now = iso()
+    ended = now if payload.status in {"completed", "failed", "cancelled"} else None
+    with DB_LOCK, connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("UPDATE runs SET status=?,ended_at=? WHERE id=?", (payload.status,ended,record_id))
+        sync_experiment_status(conn, row["experiment_id"], now)
     return one("SELECT * FROM runs WHERE id=?", (record_id,))
 
 
@@ -507,5 +534,8 @@ def create_metric(record_id: str, payload: MetricInput, user: MutatingUser):
 
 @app.delete("/api/runs/{record_id}", status_code=204)
 def delete_run(record_id: str, user: MutatingUser):
-    require_owned("runs", record_id, user.id)
-    execute("DELETE FROM runs WHERE id=?", (record_id,))
+    row = require_owned("runs", record_id, user.id)
+    with DB_LOCK, connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("DELETE FROM runs WHERE id=?", (record_id,))
+        sync_experiment_status(conn, row["experiment_id"], iso())

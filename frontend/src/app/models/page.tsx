@@ -1,7 +1,9 @@
 "use client";
 
+import { useWorkspaceQuery } from "@/components/providers";
+
 import { FormEvent, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BrainCircuit, GitBranch, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -31,12 +33,13 @@ export default function ModelsPage() {
   const [open, setOpen] = useState(false);
   const [versionFor, setVersionFor] = useState<Model | null>(null);
   const [error, setError] = useState("");
-  const { data = [], isLoading } = useQuery({
+  const { data = [], isLoading } = useWorkspaceQuery({
     queryKey: ["models"],
     queryFn: () => api<Model[]>("/models"),
   });
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useWorkspaceQuery({
     queryKey: ["projects"],
+    enabled: open,
     queryFn: () => api<Project[]>("/projects"),
   });
   const create = useMutation({

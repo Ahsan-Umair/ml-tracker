@@ -109,7 +109,7 @@ each issued hash so a server restart cannot restore a consumed emergency code.
 The helper output is secret and must not be committed or pasted into build logs.
 Remove the two environment values after the owner has recovered their account.
 
-The health check is `/api/health`; API documentation is available at `/api/docs`.
+The process health check is `/api/health`; `/api/ready` also checks database connectivity. API documentation is available at `/api/docs`.
 
 Official guide: [Deploy FastAPI on Render](https://render.com/docs/deploy-fastapi).
 
@@ -130,8 +130,26 @@ Turso is the database provider. Cloudflare is optional in this design: use it fo
 ## Verification
 
 ```bash
-cd frontend && npm run lint && npm run build
-cd ../backend && pytest -q
+cd frontend && npm ci && npm test && npm run lint && npm run build
+cd ../backend && pip install -r requirements-dev.txt && pytest -q
 ```
 
 The backend test covers the complete account → project → dataset → model/version → experiment → run → metric → dashboard/leaderboard flow, including CSRF rejection and logout.
+
+## Startup and reliability
+
+Render Free suspends an idle API after 15 minutes. The first request can take about
+a minute while it wakes up. The sign-in page renders immediately; authentication
+and workspace requests show loading or a useful retry message when the API is unavailable.
+No paid services or artificial keep-alive traffic are needed.
+
+Database schema versioning applies table/index changes once, while warm restarts skip
+those operations. Dashboard and analytics reuse one connection for related reads.
+Form lookup lists load when the form opens, and the dashboard chart loads separately.
+Successful writes invalidate related workspace data; changing accounts clears cached
+records. CSRF refreshes are shared across concurrent writes, and writes are never
+automatically retried.
+
+Changing runs recomputes the experiment outcome atomically: any queued/running run
+keeps it running, otherwise a completed run takes precedence, then failed, then draft.
+Archival is preserved. This also applies when runs are deleted or reopened.

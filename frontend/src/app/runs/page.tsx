@@ -1,7 +1,9 @@
 "use client";
 
+import { useWorkspaceQuery } from "@/components/providers";
+
 import { FormEvent, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Activity, Gauge, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -19,9 +21,11 @@ type Experiment = {
   name: string;
   project_id: string;
   project_name: string;
+  model_id: string | null;
 };
 type Version = {
   id: string;
+  model_id: string;
   version: string;
   model_name: string;
   project_id: string;
@@ -44,20 +48,25 @@ const percent = (v: number | null) =>
 export default function RunsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [experimentId, setExperimentId] = useState("");
   const [metricRun, setMetricRun] = useState<Run | null>(null);
   const [error, setError] = useState("");
-  const { data = [] } = useQuery({
+  const { data = [] } = useWorkspaceQuery({
     queryKey: ["runs"],
     queryFn: () => api<Run[]>("/runs"),
   });
-  const { data: experiments = [] } = useQuery({
+  const { data: experiments = [] } = useWorkspaceQuery({
     queryKey: ["experiments"],
+    enabled: open,
     queryFn: () => api<Experiment[]>("/experiments"),
   });
-  const { data: versions = [] } = useQuery({
+  const { data: versions = [] } = useWorkspaceQuery({
     queryKey: ["model-versions"],
+    enabled: open,
     queryFn: () => api<Version[]>("/model-versions"),
   });
+  const selectedExperiment = experiments.find(experiment => experiment.id === experimentId);
+  const compatibleVersions = versions.filter(version => selectedExperiment && version.project_id === selectedExperiment.project_id && (!selectedExperiment.model_id || version.model_id === selectedExperiment.model_id));
   const create = useMutation({
     mutationFn: (body: object) =>
       api<Run>("/runs", { method: "POST", body: JSON.stringify(body) }),
@@ -227,7 +236,7 @@ export default function RunsPage() {
             <ErrorNotice message="Create an experiment before logging a run." />
           )}
           <Field label="Experiment">
-            <select name="experiment" required disabled={!experiments.length}>
+            <select name="experiment" required disabled={!experiments.length} value={experimentId} onChange={event => setExperimentId(event.target.value)}>
               <option value="">Choose an experiment</option>
               {experiments.map((e) => (
                 <option key={e.id} value={e.id}>
@@ -254,9 +263,9 @@ export default function RunsPage() {
             </Field>
           </div>
           <Field label="Model version">
-            <select name="version">
+            <select name="version" key={experimentId} disabled={!selectedExperiment}>
               <option value="">No version linked</option>
-              {versions.map((v) => (
+              {compatibleVersions.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.model_name} · {v.version}
                 </option>

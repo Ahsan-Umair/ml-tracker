@@ -16,6 +16,8 @@ LOCAL_DB = BASE_DIR / "data" / "model_lab.db"
 DB_LOCK = Lock()
 
 
+SCHEMA_VERSION = 1
+
 SCHEMA: tuple[str, ...] = (
     """CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -140,6 +142,11 @@ SCHEMA: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_experiments_user_project ON experiments(user_id, project_id)",
     "CREATE INDEX IF NOT EXISTS idx_runs_user_experiment ON runs(user_id, experiment_id)",
     "CREATE INDEX IF NOT EXISTS idx_metrics_run_name_step ON metrics(run_id, name, step)",
+    "CREATE INDEX IF NOT EXISTS idx_metrics_user_name_time ON metrics(user_id, name, logged_at)",
+    "CREATE INDEX IF NOT EXISTS idx_runs_user_created ON runs(user_id, created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_runs_model_version ON runs(model_version_id)",
+    "CREATE INDEX IF NOT EXISTS idx_versions_model ON model_versions(model_id)",
+    "CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at)",
 )
 
 
@@ -203,11 +210,34 @@ def execute_many(sql: str, params: Sequence[Sequence[Any]]) -> None:
         conn.executemany(sql, [tuple(row) for row in params])
 
 
+class Reader:
+    """Reuse one connection for related reads without sharing it across threads."""
+
+    def __init__(self, conn: Any):
+        self.conn = conn
+
+    def query(self, sql: str, params: Sequence[Any] = ()) -> list[dict[str, Any]]:
+        return _rows(self.conn.execute(sql, tuple(params)))
+
+    def one(self, sql: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
+        rows = self.query(sql, params)
+        return rows[0] if rows else None
+
+
+@contextmanager
+def read_connection() -> Iterator[Reader]:
+    with DB_LOCK, connection() as conn:
+        yield Reader(conn)
+
+
 def initialize_database() -> None:
     with DB_LOCK, connection() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)")
+        version = conn.execute("SELECT COALESCE(MAX(version), 0) FROM schema_migrations").fetchone()[0]
+        if version >= SCHEMA_VERSION:
+            return
+        # Existing databases are adopted in place; no table or record is replaced.
+        conn.execute("BEGIN IMMEDIATE")
         for statement in SCHEMA:
             conn.execute(statement)
-        try:
-            conn.execute("PRAGMA optimize")
-        except Exception:
-            pass
+        conn.execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (SCHEMA_VERSION,))

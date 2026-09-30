@@ -250,3 +250,10 @@ tr:last-child td { border-bottom: 0; }
   .form-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Recovery states remain readable without replacing data with empty results. */
+.connection-notice { padding: 32px; margin: 24px; }
+.connection-notice p { margin: 12px 0 20px; }
+.loading-screen { text-align: center; padding: 24px; }
+.loading-screen small { max-width: 360px; color: var(--muted); }
+.action-error { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 16px; width: min(90vw, 600px); padding: 16px; background: #fff1ed; color: #8a2515; border: 1px solid #ffc9bd; border-radius: 12px; box-shadow: 0 8px 30px #0002; }

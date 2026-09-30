@@ -15,7 +15,7 @@ export function SubmitButton({ pending, children="Save" }: { pending: boolean; c
 
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: () => void }) { return <div className="empty-state"><div className="empty-orbit"><Plus size={18}/></div><h3>{title}</h3><p>{description}</p>{action&&<button className="secondary-button" onClick={action}>Create the first one</button>}</div>; }
 
-export function ErrorNotice({ message }: { message: string }) { return <div className="error-notice"><AlertTriangle size={15}/>{message}</div>; }
+export function ErrorNotice({ message }: { message: string }) { return <div className="error-notice" role="alert"><AlertTriangle size={15}/>{message}</div>; }
 
 export function StatusBadge({ value }: { value: string }) { return <span className={`status status-${value}`}>{value}</span>; }
 

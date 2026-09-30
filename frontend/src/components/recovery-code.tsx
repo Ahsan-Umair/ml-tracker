@@ -13,7 +13,7 @@ export function RecoveryCode({ recoveryCode, expiresAt }: RecoveryResult) {
     catch { setError("Select the code below and copy it, or download it."); }
   }
   function download() {
-    const blob = new Blob([`Model Lab recovery code\n\n${recoveryCode}\n\nExpires: ${expiresAt}\nUse once at https://model-lab-rho.vercel.app/recover\nKeep this code private and separate from your password.\n`], { type: "text/plain" });
+    const blob = new Blob([`Model Lab recovery code\n\n${recoveryCode}\n\nExpires: ${expiresAt}\nUse once at ${window.location.origin}/recover\nKeep this code private and separate from your password.\n`], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url; link.download = "model-lab-recovery-code.txt"; link.click();

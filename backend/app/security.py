@@ -14,7 +14,8 @@ from pwdlib import PasswordHash
 from .database import execute, one
 
 password_hash = PasswordHash.recommended()
-DUMMY_HASH = password_hash.hash("model-lab-timing-protection")
+# Precomputed non-secret dummy hash; unknown accounts still perform Argon2 verification.
+DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=4$oRg+z33Wt4rR6G4c9XAz/g$cjxEZOIbf5Cpmr4fn6srsahg3p4r+m7+6PWlCrrIIa0'
 SESSION_COOKIE = "ml_session"
 
 
