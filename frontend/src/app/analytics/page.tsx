@@ -1,10 +1,117 @@
 "use client";
-
 import { useWorkspaceQuery } from "@/components/providers";
-
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, PageHeading } from "@/components/ui";
 import { api } from "@/lib/api";
-type Analytics={runStatuses:Array<{status:string;count:number}>;frameworks:Array<{framework:string;count:number}>;storage:Array<{project:string;datasets:number;bytes:number}>;metricNames:Array<{name:string;readings:number}>};const colors=["#7357f6","#ff6d3f","#54c7ec","#b7ed5a","#f6c453"];
-export default function AnalyticsPage(){const{data}=useWorkspaceQuery({queryKey:["analytics"],queryFn:()=>api<Analytics>("/analytics")});const hasData=!!data&&(data.runStatuses.length+data.frameworks.length+data.storage.length>0);return <AppShell><PageHeading eyebrow="Patterns, not noise" title="Analytics" description="Understand how you work: model frameworks, run outcomes, data footprint, and the metrics you record most."/>{hasData?<div className="analytics-grid"><article className="panel analytics-panel"><div className="panel-header"><div><h2 className="panel-title">Run outcomes</h2><p className="panel-subtitle">Distribution by current status</p></div></div><div className="analytics-chart"><ResponsiveContainer><PieChart><Pie data={data.runStatuses} dataKey="count" nameKey="status" innerRadius={55} outerRadius={85} paddingAngle={4}>{data.runStatuses.map((_,i)=><Cell key={i} fill={colors[i%colors.length]}/>)}</Pie><Tooltip contentStyle={{border:0,borderRadius:12,fontSize:11}}/></PieChart></ResponsiveContainer></div><div className="legend">{data.runStatuses.map((item,i)=><span key={item.status}><i style={{background:colors[i%colors.length]}}/>{item.status} · {item.count}</span>)}</div></article><article className="panel analytics-panel"><div className="panel-header"><div><h2 className="panel-title">Framework mix</h2><p className="panel-subtitle">Registered models by framework</p></div></div><div className="analytics-chart"><ResponsiveContainer><BarChart data={data.frameworks} margin={{top:10,right:15,left:-20,bottom:5}}><CartesianGrid vertical={false} strokeDasharray="3 6" stroke="#dedbe8"/><XAxis dataKey="framework" tick={{fontSize:9}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:9}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{border:0,borderRadius:12,fontSize:11}}/><Bar dataKey="count" fill="#7357f6" radius={[8,8,2,2]}/></BarChart></ResponsiveContainer></div></article><article className="panel analytics-panel wide"><div className="panel-header"><div><h2 className="panel-title">Dataset footprint</h2><p className="panel-subtitle">Bytes referenced by project</p></div></div><div className="analytics-chart"><ResponsiveContainer><BarChart data={data.storage} layout="vertical" margin={{top:5,right:25,left:15,bottom:5}}><CartesianGrid horizontal={false} strokeDasharray="3 6" stroke="#dedbe8"/><XAxis type="number" tick={{fontSize:9}} axisLine={false} tickLine={false}/><YAxis type="category" dataKey="project" width={110} tick={{fontSize:9}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{border:0,borderRadius:12,fontSize:11}}/><Bar dataKey="bytes" fill="#ff6d3f" radius={[2,8,8,2]}/></BarChart></ResponsiveContainer></div></article></div>:<EmptyState title="No patterns to show yet" description="Once you add models, datasets, and runs, this page will summarize the shape of your workspace."/>}</AppShell>}
+type Analytics = {
+  runStatuses: Array<{ status: string; count: number }>;
+  frameworks: Array<{ framework: string; count: number }>;
+  storage: Array<{ project: string; datasets: number; bytes: number }>;
+  metricNames: Array<{ name: string; readings: number }>;
+};
+function Bars({
+  items,
+  unit = "",
+}: {
+  items: Array<{ label: string; value: number }>;
+  unit?: string;
+}) {
+  const max = Math.max(1, ...items.map((x) => x.value));
+  return items.length ? (
+    <ul className="bar-chart">
+      {items.map((item, i) => (
+        <li key={item.label}>
+          <div>
+            <span>
+              <i className="chart-index">{String(i + 1).padStart(2, "0")}</i>
+              {item.label}
+            </span>
+            <strong>
+              {item.value.toLocaleString()}
+              {unit}
+            </strong>
+          </div>
+          <div className="bar-track" aria-hidden="true">
+            <div style={{ width: `${(item.value / max) * 100}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <div className="compact-empty">Nothing recorded yet.</div>
+  );
+}
+export default function AnalyticsPage() {
+  const { data } = useWorkspaceQuery({
+    queryKey: ["analytics"],
+    queryFn: () => api<Analytics>("/analytics"),
+  });
+  const hasData =
+    !!data &&
+    data.runStatuses.length + data.frameworks.length + data.storage.length > 0;
+  return (
+    <AppShell>
+      <PageHeading
+        eyebrow="THE BIGGER PICTURE"
+        title="Patterns in your progress."
+        description="Understand your run outcomes, model choices, and the data behind your experiments."
+      />
+      {hasData ? (
+        <div className="analytics-grid">
+          {[
+            {
+              title: "Run outcomes",
+              copy: "Every attempt tells you something",
+              items: data.runStatuses.map((x) => ({
+                label: x.status,
+                value: x.count,
+              })),
+            },
+            {
+              title: "Framework mix",
+              copy: "Registered models by framework",
+              items: data.frameworks.map((x) => ({
+                label: x.framework,
+                value: x.count,
+              })),
+            },
+            {
+              title: "Dataset footprint",
+              copy: "Referenced storage by project · bytes",
+              items: data.storage.map((x) => ({
+                label: x.project,
+                value: x.bytes,
+              })),
+            },
+            {
+              title: "Metrics you track",
+              copy: "Number of recorded readings",
+              items: data.metricNames.map((x) => ({
+                label: x.name,
+                value: x.readings,
+              })),
+            },
+          ].map(({ title, copy, items }) => (
+            <article className="panel analytics-panel" key={title}>
+              <div className="panel-header">
+                <div>
+                  <h2 className="panel-title">{title}</h2>
+                  <p className="panel-subtitle">{copy}</p>
+                </div>
+                <span className="chart-total">
+                  {items.reduce((sum, x) => sum + x.value, 0).toLocaleString()}
+                </span>
+              </div>
+              <Bars items={items} />
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="Your patterns will take shape here"
+          description="Add models, datasets, and runs to see what’s working across your workspace."
+        />
+      )}
+    </AppShell>
+  );
+}

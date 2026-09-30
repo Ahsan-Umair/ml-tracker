@@ -122,12 +122,14 @@ export default function ModelsPage() {
                   <button
                     className="icon-button"
                     title="Add version"
+                    aria-label={`Add version to ${model.name}`}
                     onClick={() => setVersionFor(model)}
                   >
                     <GitBranch size={14} />
                   </button>
                   <button
                     className="danger-button"
+                    aria-label={`Delete ${model.name}`}
                     onClick={() =>
                       confirm(`Delete “${model.name}”?`) &&
                       remove.mutate(model.id)
