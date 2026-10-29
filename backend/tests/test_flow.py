@@ -105,6 +105,7 @@ def test_complete_personal_model_tracking_flow(tmp_path, monkeypatch):
             "model_versions": 1,
             "runs": 1,
             "best_accuracy": 0.948,
+            "best_score": 0.948,
         }
         assert client.get("/api/leaderboard").json()[0]["rank"] == 1
         assert client.get("/api/analytics").status_code == 200

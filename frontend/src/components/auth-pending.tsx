@@ -8,8 +8,8 @@ export function AuthPending() {
   }, []);
   return slow ? (
     <p className="connection-notice" role="status">
-      Connecting to your workspace. After a break, the server can take about a
-      minute to wake up. You can leave this page open.
+      Connecting to your workspace. After a break, the server can take a little
+      longer to respond. You can leave this page open.
     </p>
   ) : null;
 }

@@ -1,42 +1,36 @@
 "use client";
-
-import AccuracyChart from "@/components/accuracy-chart";
 import Link from "next/link";
-import {
-  Boxes,
-  BrainCircuit,
-  CircleGauge,
-  GitBranch,
-  Play,
-  Plus,
-  Trophy,
-  UserRound,
-} from "lucide-react";
+import { useState } from "react";
+import { Boxes, GitBranch, CircleGauge, Trophy } from "lucide-react";
+import MetricTrend from "@/components/accuracy-chart";
 import { AppShell } from "@/components/app-shell";
 import { useAuth, useWorkspaceQuery } from "@/components/providers";
-import {
-  CardSkeleton,
-  EmptyState,
-  PageHeading,
-  StatusBadge,
-} from "@/components/ui";
+import { EmptyState, PageHeading, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api";
-import { useRouter } from "next/navigation";
-
+type Policy = {
+  name: string;
+  direction: string;
+  aggregation: string;
+  unit: string;
+  split: string;
+  experimentId: string;
+  experimentName: string;
+  confirmed?: boolean;
+};
 type Dashboard = {
   stats: {
     projects: number;
     model_versions: number;
     runs: number;
-    best_accuracy: number | null;
+    best_score: number | null;
   };
+  selectedMetric: Policy | null;
   recentRuns: Array<{
     id: string;
     name: string;
     status: string;
     experiment: string;
     score: number | null;
-    started_at: string;
   }>;
   trend: Array<{ day: string; value: number }>;
   topModels: Array<{
@@ -49,54 +43,95 @@ type Dashboard = {
     versions: number;
   }>;
 };
-const percent = (value: number | null) =>
-  value == null ? "—" : `${(value <= 1 ? value * 100 : value).toFixed(1)}%`;
-
+function score(v: number | null | undefined, unit = "") {
+  if (v == null) return "—";
+  return unit === "fraction"
+    ? `${(v * 100).toFixed(2)}%`
+    : `${Number(v.toPrecision(5))}${unit === "percent" ? "%" : unit && unit !== "number" ? ` ${unit}` : ""}`;
+}
 export default function DashboardPage() {
   const { user } = useAuth();
-  const router = useRouter();
-  const { data, isLoading } = useWorkspaceQuery({
-    queryKey: ["dashboard"],
-    queryFn: () => api<Dashboard>("/dashboard"),
-    enabled: !!user,
+  const [experimentId, setExperimentId] = useState("");
+  const query = useWorkspaceQuery({
+    queryKey: ["dashboard", experimentId],
+    queryFn: ({ signal }) =>
+      api<Dashboard>(
+        `/dashboard${experimentId ? `?experiment_id=${encodeURIComponent(experimentId)}` : ""}`,
+        { signal },
+      ),
   });
-  const stats = data?.stats;
-  const trend =
-    data?.trend.map((item) => ({
-      ...item,
-      value: item.value <= 1 ? item.value * 100 : item.value,
-    })) || [];
+  const experiments = useWorkspaceQuery({
+    queryKey: ["dashboard-experiments"],
+    queryFn: ({ signal }) =>
+      api<Array<{ id: string; name: string }>>("/experiments?limit=500", {
+        signal,
+      }),
+  });
+  const data = query.data,
+    metric = data?.selectedMetric;
   return (
     <AppShell>
       <PageHeading
         eyebrow={`YOUR WORKSPACE${user?.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}`}
         title="A clearer view of your progress."
-        description="Every experiment is a step forward. Here’s where your work stands."
-        actionLabel="Log a run"
-        action={() => router.push("/runs")}
+        description="Track comparable results and follow every experiment through to its outcome."
       />
-      {data && data.stats.projects === 0 && (
+      <div className="panel" style={{ padding: 20, marginBottom: 24 }}>
+        <label className="field">
+          <span>Experiment for scores and trends</span>
+          <select
+            aria-label="Experiment for scores and trends"
+            value={experimentId}
+            onChange={(e) => setExperimentId(e.target.value)}
+          >
+            <option value="">Most recently updated experiment</option>
+            {experiments.data?.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="panel-subtitle">
+          {metric
+            ? `${metric.experimentName} · ${metric.name} · ${metric.split || "unspecified split"} · ${metric.aggregation} reading · ${metric.direction === "min" ? "lower" : "higher"} is better`
+            : "Choose or create an experiment to see comparable results."}
+        </p>
+      </div>
+      {metric?.confirmed === false && (
+        <p className="error-notice" role="status">
+          Legacy results use mixed or uncertain units.{" "}
+          <Link href={`/experiments/${metric.experimentId}`}>
+            Review and confirm the experiment’s metric policy
+          </Link>{" "}
+          before ranking results.
+        </p>
+      )}
+      {query.isPending && <p role="status">Loading your dashboard…</p>}
+      {data && (data.stats.projects === 0 || data.stats.runs === 0) && (
         <section className="onboarding-panel">
           <div>
-            <p className="eyebrow">YOUR FIRST EXPERIMENT STARTS HERE</p>
-            <h2>Big ideas. Small first steps.</h2>
+            <p className="eyebrow">BUILD YOUR FIRST EXPERIMENT</p>
+            <h2>Keep the whole story together.</h2>
             <p>
-              Create a project, register a model, then record what you learn.
+              Set up your project, define the metric that matters, then record
+              an attempt.
             </p>
-            <Link className="primary-button" href="/projects">
-              <Plus size={16} />
-              Create your first project
-            </Link>
           </div>
           <ol>
             <li>
-              <span>01</span>Give your idea a project
+              <Link href="/projects">01 · Create a project</Link>
             </li>
             <li>
-              <span>02</span>Register a model & version
+              <Link href="/models">02 · Register a model and version</Link>
             </li>
             <li>
-              <span>03</span>Run an experiment & log results
+              <Link href="/experiments">
+                03 · Define an experiment and scoring policy
+              </Link>
+            </li>
+            <li>
+              <Link href="/runs">04 · Log a run and its metrics</Link>
             </li>
           </ol>
         </section>
@@ -104,45 +139,41 @@ export default function DashboardPage() {
       <section className="metric-grid" aria-label="Workspace summary">
         {[
           {
-            label: "Active projects",
-            value: stats?.projects ?? 0,
-            change: "Organized workspaces",
-            icon: Boxes,
-            accent: "#27785f",
+            label: "Projects",
+            value: data?.stats.projects,
+            copy: "Organized workspaces",
+            Icon: Boxes,
           },
           {
             label: "Model versions",
-            value: stats?.model_versions ?? 0,
-            change: "Registered snapshots",
-            icon: GitBranch,
-            accent: "#b38553",
+            value: data?.stats.model_versions,
+            copy: "Registered snapshots",
+            Icon: GitBranch,
           },
           {
             label: "Experiment runs",
-            value: stats?.runs ?? 0,
-            change: "Tracked attempts",
-            icon: CircleGauge,
-            accent: "#638f9b",
+            value: data?.stats.runs,
+            copy: "Tracked attempts",
+            Icon: CircleGauge,
           },
           {
-            label: "Best accuracy",
-            value: percent(stats?.best_accuracy ?? null),
-            change: "Across accuracy metrics",
-            icon: Trophy,
-            accent: "#74934a",
+            label: metric ? `Best ${metric.name}` : "Best experiment score",
+            value: score(data?.stats.best_score, metric?.unit),
+            copy: metric
+              ? "Within the selected experiment"
+              : "Select an experiment",
+            Icon: Trophy,
           },
-        ].map(({ label, value, change, icon: Icon, accent }) => (
-          <article
-            className="metric-card"
-            style={{ "--accent": accent } as React.CSSProperties}
-            key={label}
-          >
+        ].map(({ label, value, copy, Icon }) => (
+          <article className="metric-card" key={label}>
             <div className="metric-label">
               <span>{label}</span>
-              <Icon size={15} />
+              <Icon size={16} />
             </div>
-            <div className="metric-value">{isLoading ? "…" : value}</div>
-            <div className="metric-change">{change}</div>
+            <div className="metric-value">
+              {query.isPending ? "…" : (value ?? "—")}
+            </div>
+            <div className="metric-change">{copy}</div>
           </article>
         ))}
       </section>
@@ -150,59 +181,50 @@ export default function DashboardPage() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <h2 className="panel-title">Accuracy trend</h2>
+              <h2 className="panel-title">{metric?.name || "Metric"} trend</h2>
               <p className="panel-subtitle">
-                Best daily score across your recent runs
+                Daily {metric?.aggregation || "best"} readings for one
+                experiment and evaluation split
               </p>
             </div>
-            {trend.length > 0 && <span className="status">Tracking</span>}
           </div>
           <div className="chart-wrap">
-            {trend.length ? (
-              <AccuracyChart trend={trend} />
+            {data?.trend.length ? (
+              <MetricTrend
+                trend={data.trend}
+                name={metric?.name}
+                unit={metric?.unit}
+              />
             ) : (
               <EmptyState
                 title="No metric trend yet"
-                description="Log an accuracy metric on a run and your progress curve will appear here."
+                description="Log the experiment’s primary metric on a run to start its curve."
               />
             )}
           </div>
         </article>
         <article className="panel">
           <div className="panel-header">
-            <div>
-              <h2 className="panel-title">Recent runs</h2>
-              <p className="panel-subtitle">Latest training activity</p>
-            </div>
-            <Play size={15} />
+            <h2 className="panel-title">Recent runs</h2>
+            <Link href="/runs">View all</Link>
           </div>
           <div className="run-list">
-            {data?.recentRuns.length ? (
-              data.recentRuns.map((run, index) => (
-                <div className="run-row" key={run.id}>
-                  <div className="run-icon">
-                    {index === 0 ? (
-                      <BrainCircuit size={15} />
-                    ) : (
-                      <GitBranch size={15} />
-                    )}
-                  </div>
-                  <div>
-                    <Link href="/runs" className="run-name">
-                      {run.name}
-                    </Link>
-                    <div className="run-meta">{run.experiment}</div>
-                  </div>
-                  <StatusBadge value={run.status} />
+            {data?.recentRuns.map((run) => (
+              <div className="run-row" key={run.id}>
+                <div>
+                  <Link className="run-name" href={`/runs/${run.id}`}>
+                    {run.name}
+                  </Link>
+                  <p className="run-meta">{run.experiment}</p>
                 </div>
-              ))
-            ) : (
-              <div className="compact-empty">
-                <p>No runs yet.</p>
-                <button onClick={() => router.push("/runs")}>
-                  <Plus size={13} /> Log one
-                </button>
+                <StatusBadge value={run.status} />
               </div>
+            ))}
+            {!query.isPending && !data?.recentRuns.length && (
+              <EmptyState
+                title="No runs yet"
+                description="Log a run manually or connect a notebook from Settings."
+              />
             )}
           </div>
         </article>
@@ -210,68 +232,49 @@ export default function DashboardPage() {
       <section className="panel table-panel">
         <div className="panel-header">
           <div>
-            <h2 className="panel-title">Top models</h2>
+            <h2 className="panel-title">Models in focus</h2>
             <p className="panel-subtitle">
-              Ranked by your primary accuracy metric
+              Scores use the selected experiment’s policy.
             </p>
           </div>
-          <UserRound size={15} />
+          <Link href="/leaderboard">Compare results</Link>
         </div>
-        {isLoading ? (
-          <CardSkeleton />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Project</th>
-                  <th>Framework</th>
-                  <th>Versions</th>
-                  <th>Best score</th>
-                  <th>Status</th>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Project</th>
+                <th>Framework</th>
+                <th>Versions</th>
+                <th>Score</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.topModels.map((model) => (
+                <tr key={model.id}>
+                  <td>
+                    <Link href={`/models/${model.id}`}>{model.name}</Link>
+                  </td>
+                  <td>{model.project}</td>
+                  <td>{model.framework}</td>
+                  <td>{model.versions}</td>
+                  <td>{score(model.score, metric?.unit)}</td>
+                  <td>
+                    <StatusBadge value={model.status} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {data?.topModels.map((model, index) => (
-                  <tr key={model.id}>
-                    <td>
-                      <div className="model-cell">
-                        <span
-                          className="model-dot"
-                          style={
-                            {
-                              "--dot": ["#27785f", "#b38553", "#638f9b"][
-                                index % 3
-                              ],
-                            } as React.CSSProperties
-                          }
-                        />
-                        <Link href="/models">{model.name}</Link>
-                      </div>
-                    </td>
-                    <td className="muted">{model.project}</td>
-                    <td className="muted">{model.framework}</td>
-                    <td>{model.versions}</td>
-                    <td>
-                      <strong>{percent(model.score)}</strong>
-                    </td>
-                    <td>
-                      <StatusBadge value={model.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!data?.topModels.length && (
-              <EmptyState
-                title="No registered models"
-                description="Add your first model and its versions to start building a durable registry."
-                action={() => router.push("/models")}
-              />
-            )}
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+          {!query.isPending && !data?.topModels.length && (
+            <EmptyState
+              title="No model results yet"
+              description="Link a model version to a run to connect its results."
+            />
+          )}
+        </div>
       </section>
     </AppShell>
   );

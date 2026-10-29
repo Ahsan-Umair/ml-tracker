@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  type ReactElement,
+} from "react";
 import { AlertTriangle, LoaderCircle, Plus, X } from "lucide-react";
 
 export function PageHeading({
@@ -46,16 +54,36 @@ export function Modal({
   open,
   onClose,
   children,
+  pending = false,
+  protectDraft = true,
 }: {
   title: string;
   description?: string;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  pending?: boolean;
+  protectDraft?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const dirty = useRef(false);
+  const titleId = useId();
+  function close() {
+    if (pending || ref.current?.querySelector('button[aria-busy="true"]')) {
+      return;
+    }
+    if (
+      protectDraft &&
+      dirty.current &&
+      !window.confirm("Discard the changes in this form?")
+    )
+      return;
+    dirty.current = false;
+    onClose();
+  }
   useEffect(() => {
     if (!open) return;
+    dirty.current = false;
     const dialog = ref.current;
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
@@ -67,15 +95,29 @@ export function Modal({
       previous?.focus();
     };
   }, [open]);
+  useEffect(() => {
+    if (!open || !protectDraft) return;
+    function beforeUnload(event: BeforeUnloadEvent) {
+      if (dirty.current) event.preventDefault();
+    }
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, [open, protectDraft]);
   if (!open) return null;
   return (
     <dialog
       ref={ref}
       className="modal"
-      aria-label={title}
+      aria-labelledby={titleId}
+      onInputCapture={() => {
+        dirty.current = true;
+      }}
+      onChangeCapture={() => {
+        dirty.current = true;
+      }}
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        close();
       }}
       onClick={(e) => {
         if (e.target !== e.currentTarget) return;
@@ -86,20 +128,21 @@ export function Modal({
           e.clientY < rect.top ||
           e.clientY > rect.bottom
         )
-          onClose();
+          close();
       }}
     >
       <div className="modal-header">
         <div>
           <p className="eyebrow">MODEL LAB</p>
-          <h2>{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           {description && <p>{description}</p>}
         </div>
         <button
           type="button"
           className="icon-button"
-          onClick={onClose}
+          onClick={close}
           aria-label="Close"
+          disabled={pending}
         >
           <X size={18} />
         </button>
@@ -112,17 +155,20 @@ export function Modal({
 export function SubmitButton({
   pending,
   pendingLabel = "Saving…",
+  disabled = false,
   children = "Save",
 }: {
   pending: boolean;
   pendingLabel?: string;
+  disabled?: boolean;
   children?: React.ReactNode;
 }) {
   return (
     <button
       className="primary-button form-submit"
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
+      aria-busy={pending}
     >
       {pending ? (
         <>
@@ -193,11 +239,27 @@ export function Field({
   children: React.ReactNode;
   hint?: string;
 }) {
+  const labelId = useId();
+  const hintId = `${labelId}-hint`;
+  const controls = Children.map(children, (child) => {
+    if (
+      !isValidElement(child) ||
+      typeof child.type !== "string" ||
+      !["input", "select", "textarea"].includes(child.type)
+    )
+      return child;
+    const control = child as ReactElement<React.AriaAttributes>;
+    return cloneElement(control, {
+      "aria-labelledby": control.props["aria-labelledby"] || labelId,
+      "aria-describedby":
+        control.props["aria-describedby"] || (hint ? hintId : undefined),
+    });
+  });
   return (
     <label className="field">
-      <span>{label}</span>
-      {children}
-      {hint && <small>{hint}</small>}
+      <span id={labelId}>{label}</span>
+      {controls}
+      {hint && <small id={hintId}>{hint}</small>}
     </label>
   );
 }

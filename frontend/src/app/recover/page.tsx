@@ -139,8 +139,9 @@ export default function RecoverPage() {
               <summary>Don’t have a recovery code?</summary>
               <p>
                 If you’re signed in on another device, create one in Settings
-                using your current password. Otherwise, use your Render account
-                to issue an emergency code. Recovery email is not enabled.
+                using your current password. Otherwise, use your hosting
+                dashboard to issue an emergency code. Recovery email is not
+                enabled.
               </p>
             </details>
             <p className="auth-switch">

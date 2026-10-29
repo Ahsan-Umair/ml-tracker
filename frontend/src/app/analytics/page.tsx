@@ -9,12 +9,21 @@ type Analytics = {
   storage: Array<{ project: string; datasets: number; bytes: number }>;
   metricNames: Array<{ name: string; readings: number }>;
 };
+function formatBytes(value: number) {
+  if (!value) return "0 B";
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+  const index = Math.min(
+    Math.floor(Math.log(value) / Math.log(1024)),
+    units.length - 1,
+  );
+  return `${(value / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+}
 function Bars({
   items,
-  unit = "",
+  format = (value: number) => value.toLocaleString(),
 }: {
   items: Array<{ label: string; value: number }>;
-  unit?: string;
+  format?: (value: number) => string;
 }) {
   const max = Math.max(1, ...items.map((x) => x.value));
   return items.length ? (
@@ -26,10 +35,7 @@ function Bars({
               <i className="chart-index">{String(i + 1).padStart(2, "0")}</i>
               {item.label}
             </span>
-            <strong>
-              {item.value.toLocaleString()}
-              {unit}
-            </strong>
+            <strong>{format(item.value)}</strong>
           </div>
           <div className="bar-track" aria-hidden="true">
             <div style={{ width: `${(item.value / max) * 100}%` }} />
@@ -42,9 +48,9 @@ function Bars({
   );
 }
 export default function AnalyticsPage() {
-  const { data } = useWorkspaceQuery({
+  const { data, isPending } = useWorkspaceQuery({
     queryKey: ["analytics"],
-    queryFn: () => api<Analytics>("/analytics"),
+    queryFn: ({ signal }) => api<Analytics>("/analytics", { signal }),
   });
   const hasData =
     !!data &&
@@ -56,6 +62,7 @@ export default function AnalyticsPage() {
         title="Patterns in your progress."
         description="Understand your run outcomes, model choices, and the data behind your experiments."
       />
+      {isPending && <p role="status">Loading analytics…</p>}
       {hasData ? (
         <div className="analytics-grid">
           {[
@@ -77,7 +84,8 @@ export default function AnalyticsPage() {
             },
             {
               title: "Dataset footprint",
-              copy: "Referenced storage by project · bytes",
+              copy: "Referenced dataset sizes by project",
+              format: formatBytes,
               items: data.storage.map((x) => ({
                 label: x.project,
                 value: x.bytes,
@@ -91,7 +99,7 @@ export default function AnalyticsPage() {
                 value: x.readings,
               })),
             },
-          ].map(({ title, copy, items }) => (
+          ].map(({ title, copy, items, format }) => (
             <article className="panel analytics-panel" key={title}>
               <div className="panel-header">
                 <div>
@@ -99,19 +107,23 @@ export default function AnalyticsPage() {
                   <p className="panel-subtitle">{copy}</p>
                 </div>
                 <span className="chart-total">
-                  {items.reduce((sum, x) => sum + x.value, 0).toLocaleString()}
+                  {format
+                    ? format(items.reduce((sum, x) => sum + x.value, 0))
+                    : items
+                        .reduce((sum, x) => sum + x.value, 0)
+                        .toLocaleString()}
                 </span>
               </div>
-              <Bars items={items} />
+              <Bars items={items} format={format} />
             </article>
           ))}
         </div>
-      ) : (
+      ) : !isPending ? (
         <EmptyState
           title="Your patterns will take shape here"
           description="Add models, datasets, and runs to see what’s working across your workspace."
         />
-      )}
+      ) : null}
     </AppShell>
   );
 }

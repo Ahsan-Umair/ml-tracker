@@ -1,155 +1,97 @@
 # Model Lab
 
-Model Lab is a personal ML model registry and experiment tracker. It keeps projects, dataset references, model versions, experiments, runs, hyperparameters, environments, and metrics in one account-scoped workspace.
+A personal workspace for ML projects, datasets, model versions, experiments, runs, and metrics. The application uses Next.js/React/TypeScript, FastAPI, and Turso/libSQL. The old Streamlit/MySQL prototype has been removed.
 
-The original Streamlit/MySQL university prototype is still present at the repository root for reference. The production application lives in `frontend/` and `backend/`.
+## Architecture
 
-## Production architecture
-
-| Layer | Technology | Host |
+| Component | Directory | Target |
 | --- | --- | --- |
-| Interface | Next.js 16, React 19, TypeScript, Tailwind CSS 4, TanStack Query, Recharts | Vercel |
-| API | FastAPI, Pydantic, secure cookie sessions, Argon2id | Render |
-| Database | Turso/libSQL in production; SQLite locally | Turso |
+| Web interface | `frontend/` | Existing Vercel Hobby frontend project |
+| FastAPI API | `backend/` | Separate Vercel Hobby API project |
+| Durable records, sessions, tokens | External database | Existing Turso Free database |
+| Notebook client | `sdk/` | Your local training environment |
 
-The browser calls `/api/*` on the Vercel domain. Next.js proxies those requests to Render, which keeps the session cookie first-party and avoids putting bearer tokens in browser storage.
+The browser uses first-party `/api/*` URLs. Next.js proxies these to the backend origin in `API_ORIGIN`. Database credentials stay on the API service. Training and inference computation remain in your own environment; the app records their metadata and measurements.
 
-### Free-plan policy
+The repository targets Vercel for both services. This configuration alone does not move production traffic: follow [the deployment and cutover guide](docs/DEPLOYMENT.md). Keep the previous API online until the new deployment passes verification.
 
-This project must always stay on free plans: Vercel Hobby, Render Free, and Turso Free.
-Do not enable paid upgrades, add-ons, or automatic overages. If a free quota is reached,
-stop and explain the limit instead. Render may sleep when idle; its free instance hours
-are shared with other free services in the same workspace.
+## Features
 
-## What works
+- Owner-only production registration, Argon2id passwords, secure HttpOnly sessions, CSRF checks, ownership enforcement, database-backed login/recovery throttling, and single-use recovery codes.
+- Detail pages and editable metadata for projects, datasets, models, experiments, and runs; model-version browsing and lifecycle promotion.
+- An experiment-specific primary metric, split, unit, optimization direction, and best/final aggregation. Comparisons stay within the same experiment and evaluation protocol.
+- Metric history and curves, side-by-side run/configuration comparison, CSV reports, and experiment-scoped leaderboards.
+- Tags, search, filters, sorting, server pagination, and account-scoped saved view preferences on the current device.
+- Guided parameter entry with JSON support, provenance/checksums, parent runs, contextual onboarding, and informative deletion previews. Projects can be archived without deleting data.
+- Profile/password controls, session revocation, project-scoped expiring API tokens, workspace/project JSON export, and validated import previews that copy records with new IDs.
+- Dark/light appearance, keyboard navigation and command palette, reduced-motion support, mobile navigation, chart data alternatives, and localized loading/error feedback.
+- Dependency-free Python client with atomic metric batches and idempotency. See [the client guide](sdk/README.md).
 
-- Personal account registration, sign-in, sign-out, and expiring revocable sessions
-- Argon2id password hashing, HttpOnly/Secure/SameSite cookies, CSRF protection, origin checks, and login throttling
-- Strict per-user ownership checks for every protected record
-- Projects with cascade-safe deletion
-- Dataset metadata and external/local URI references
-- Model registry with immutable named versions and lifecycle stages
-- Experiments linked to a project, model, and dataset
-- Training, evaluation, and inference runs with JSON hyperparameters and environment capture
-- Arbitrary metrics by step/epoch
-- Live dashboard, leaderboard, and analytics
-- Responsive keyboard-friendly interface with reduced-motion support
+## Free-plan policy
 
-## Local setup
+Use Vercel Hobby and Turso Free only. Do not enable paid resources, paid add-ons, or metered upgrades. Hobby is intended for personal non-commercial use and enforces usage quotas. No keep-alive traffic is needed.
 
-Use Python 3.13 for parity with Render. Python 3.14 may try to compile the current libSQL client locally.
+## Local development
 
-### 1. Start the API
+Python 3.13 matches the deployment pin. Node 24 LTS is recommended; the frontend requires Node 22.13 or newer.
 
 ```bash
 cd backend
 python3.13 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-With no Turso variables, the API creates `backend/data/model_lab.db` automatically.
+Without Turso credentials, development uses `backend/data/model_lab.db`. Production requires Turso and refuses local persistence.
 
-### 2. Start the interface
+In another terminal:
 
 ```bash
 cd frontend
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`, register an account, and create the first project.
+Open `http://localhost:3000`. Create a development account and your first project. Do not point local or preview tests at the production database.
 
-## Deploy Turso
+## Recording results
 
-1. Create a Turso database.
-2. Copy its `libsql://...turso.io` URL.
-3. Create a database auth token.
-4. Keep both values private; they belong only in Render environment variables.
+Choose an experiment's exact metric, split and unit. For example `val_accuracy`, `validation`, `fraction`, `max`, `best`; enter `.95` for 95%. For validation loss use a numeric unit and `min`. Model Lab does not infer percentage units from a number's size, mix training/test readings, or rank unrelated experiments as equivalent.
 
-The API creates the required tables and indexes safely at startup. The frontend never receives database credentials.
+In Settings, create a token scoped to the intended project. Install the client with `pip install ./sdk`, store credentials in environment variables, and follow [the notebook example](sdk/README.md). API-token secrets are shown once. Exported workspace JSON excludes password hashes, sessions, API tokens, and recovery credentials, but still contains your experiment data and should be stored privately.
 
-Official guide: [Turso Python quickstart](https://docs.turso.tech/sdk/python/quickstart).
-
-## Deploy the API to Render
-
-The repository includes `render.yaml`.
-
-1. Push the repository to GitHub.
-2. In Render, create a new Blueprint from the repository.
-3. Add these secret/environment values:
-   - `TURSO_DATABASE_URL`: the Turso database URL
-   - `TURSO_AUTH_TOKEN`: the Turso auth token
-   - `FRONTEND_ORIGINS`: the exact Vercel URL, then your custom domain when connected
-4. Keep `COOKIE_SECURE=true`.
-5. Set `APP_ENV=production`, `OWNER_EMAIL` to your email, and `REGISTRATION_TOKEN` to a
-   private random setup code of at least 32 characters. Share the code with the owner only.
-6. Register with the owner email and setup code, then set `ALLOW_REGISTRATION=false`.
-   Keep the password in your password manager and create a recovery code in Settings.
+Legacy accuracy history is migrated using the previous interface’s display convention, while preserving raw values. If historical units are mixed or uncertain, the experiment is marked for review and ranked scores stay hidden until the owner explicitly confirms its metric policy.
 
 ## Account recovery
 
-The sign-in page links to `/recover`. Enter the account email, private recovery code,
-and a new password. Successful recovery changes only the password, revokes all sessions,
-and replaces the consumed code with a new one shown once. Save or download it before
-leaving. Codes expire after one year; Settings can replace one after password confirmation.
-Recovery attempts are limited in the database, including across backend restarts.
-This flow uses the existing free services; no recovery email provider is configured.
+Create and save a recovery code in Settings. `/recover` consumes the current code, changes the password, revokes existing access, and provides a replacement code once. If the owner has no usable code, run `python scripts/issue_recovery_code.py` inside `backend/` privately. Configure its generated emergency hash and UTC expiry on the API host, redeploy, recover, then remove those emergency variables. Never paste raw codes or credentials in logs or commits.
 
-For an owner who has no code, issue an emergency code with
-`python scripts/issue_recovery_code.py` from `backend`. The helper only generates a
-random code and its hash; it does not access or modify a database. Put the two printed
-environment values (`OWNER_RECOVERY_CODE_HASH`, `OWNER_RECOVERY_EXPIRES_AT`) in the
-existing Render service and redeploy. Give the raw code privately to the owner.
-It expires after 24 hours. Never reuse the registration setup code. The database records
-each issued hash so a server restart cannot restore a consumed emergency code.
-The helper output is secret and must not be committed or pasted into build logs.
-Remove the two environment values after the owner has recovered their account.
-
-The process health check is `/api/health`; `/api/ready` also checks database connectivity. API documentation is available at `/api/docs`.
-
-Official guide: [Deploy FastAPI on Render](https://render.com/docs/deploy-fastapi).
-
-## Deploy the interface to Vercel
-
-1. Import the same GitHub repository into Vercel.
-2. Set the project root directory to `frontend`.
-3. Add `API_ORIGIN` with the Render service origin, for example `https://model-lab-api.onrender.com` (no trailing slash).
-4. Deploy.
-5. Copy the final Vercel origin back into Render's `FRONTEND_ORIGINS` and redeploy the API.
-
-For preview deployments, add each preview origin to `FRONTEND_ORIGINS`, comma-separated, or use a stable custom preview domain. Do not use a wildcard with credentialed requests.
-
-## Cloudflare
-
-Turso is the database provider. Cloudflare is optional in this design: use it for DNS, a custom domain, and edge security in front of Vercel/Render if desired. It does not replace Turso unless the backend is intentionally redesigned around Cloudflare D1.
-
-## Verification
+## Checks
 
 ```bash
-cd frontend && npm ci && npm test && npm run lint && npm run build
-cd ../backend && pip install -r requirements-dev.txt && pytest -q
+cd backend
+python -m pytest -q
+cd ../sdk
+python -m unittest discover -s tests -v
+cd ../frontend
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npx playwright install chromium
+# With the local API and web servers running:
+npm run test:e2e
 ```
 
-The backend test covers the complete account → project → dataset → model/version → experiment → run → metric → dashboard/leaderboard flow, including CSRF rejection and logout.
+The browser checks create their own development accounts and records. Run them against disposable development data only. `.github/workflows/ci.yml` runs backend, SDK, TypeScript, lint, production build, and Chromium integration checks on Linux/Python 3.13.
 
-## Startup and reliability
+`/api/health` checks process liveness; `/api/ready` also checks database connectivity. `/api/docs` describes API contracts. Logs include request IDs/status/timing and exclude request bodies, query strings, cookies, and authorization values.
 
-Render Free suspends an idle API after 15 minutes. The first request can take about
-a minute while it wakes up. The sign-in page renders immediately; authentication
-and workspace requests show loading or a useful retry message when the API is unavailable.
-No paid services or artificial keep-alive traffic are needed.
+## Data safety and maintenance
 
-Database schema versioning applies table/index changes once, while warm restarts skip
-those operations. Dashboard and analytics reuse one connection for related reads.
-Form lookup lists load when the form opens, and the dashboard chart loads separately.
-Successful writes invalidate related workspace data; changing accounts clears cached
-records. CSRF refreshes are shared across concurrent writes, and writes are never
-automatically retried.
+Schema migrations are incremental and preserve existing records. Back up before a production migration and test restore/import with disposable data. Import validates foreign-key relationships and creates new IDs without replacing existing projects. Review deletion previews before permanently removing a record. Prefer archival when retaining history matters.
 
-Changing runs recomputes the experiment outcome atomically: any queued/running run
-keeps it running, otherwise a completed run takes precedence, then failed, then draft.
-Archival is preserved. This also applies when runs are deleted or reopened.
+List APIs return arrays with `X-Total-Count`, bounded `limit` and `offset`, and supported filters. Charts use bounded histories; paginate or export the underlying readings when needed. The current implementation does not provide hosted model training, uploaded artifact storage, or collaboration accounts; it keeps artifact/dataset references and private owner access.

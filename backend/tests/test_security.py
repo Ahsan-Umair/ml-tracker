@@ -68,7 +68,7 @@ def test_production_never_falls_back_to_local_storage(monkeypatch):
 def test_local_foreign_keys_and_finite_metrics():
     database.initialize_database()
     with pytest.raises(sqlite3.IntegrityError):
-        database.execute("INSERT INTO projects VALUES(?,?,?,?,?,?,?)", ("p", "missing", "bad", "", "#000000", "now", "now"))
+        database.execute("INSERT INTO projects(id,user_id,name,description,color,created_at,updated_at) VALUES(?,?,?,?,?,?,?)", ("p", "missing", "bad", "", "#000000", "now", "now"))
     for value in (float("nan"), float("inf"), float("-inf")):
         with pytest.raises(ValidationError):
             MetricInput(name="accuracy", value=value)

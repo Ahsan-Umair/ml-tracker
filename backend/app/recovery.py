@@ -83,6 +83,7 @@ def recover_account(email: str, code: str, password: str):
             raise HTTPException(400, INVALID_CODE)
         conn.execute("UPDATE users SET password_hash=?,updated_at=? WHERE id=?", (password_hash, iso(), row["user_id"]))
         conn.execute("DELETE FROM sessions WHERE user_id=?", (row["user_id"],))
+        conn.execute("DELETE FROM api_tokens WHERE user_id=?", (row["user_id"],))
     return {"recoveryCode": replacement, "expiresAt": expiry}
 
 

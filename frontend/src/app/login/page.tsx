@@ -9,19 +9,14 @@ import { ErrorNotice, Field, SubmitButton } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { AuthFrame } from "@/components/auth-frame";
 import { AuthPending } from "@/components/auth-pending";
+import { safeWorkspaceDestination } from "@/lib/navigation";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { user, setSession } = useAuth();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const requested = params.get("next") || "/dashboard";
-  const destination =
-    /^\/(dashboard|projects|datasets|models|experiments|runs|leaderboard|analytics|settings)$/.test(
-      requested,
-    )
-      ? requested
-      : "/dashboard";
+  const destination = safeWorkspaceDestination(params.get("next"));
   useEffect(() => {
     if (user) router.replace(destination);
   }, [user, router, destination]);

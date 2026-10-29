@@ -25,7 +25,7 @@ Initial JavaScript summed from production HTML script references and gzip-compre
 
 Analytics initial JavaScript is approximately 38% smaller. Removing Recharts removed 39 installed packages. Login and dashboard payload sizes are essentially unchanged. The redesign does not claim faster backend responses.
 
-The free Render backend can still take time to wake after inactivity. A delayed sign-in status message explains this wait. Hosting remains Vercel + Render + Turso on existing free plans.
+The API can take time to initialize. Authentication displays useful pending and retry states. The frontend and FastAPI backend target Vercel Hobby, with Turso Free for durable data.
 
 ## Verification
 
