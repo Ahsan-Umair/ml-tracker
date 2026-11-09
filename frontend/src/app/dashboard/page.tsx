@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Boxes, GitBranch, CircleGauge, Trophy } from "lucide-react";
+import { ArrowUpRight, Boxes, GitBranch, CircleGauge, Trophy, FlaskConical, Plus } from "lucide-react";
 import MetricTrend from "@/components/accuracy-chart";
 import { AppShell } from "@/components/app-shell";
 import { useAuth, useWorkspaceQuery } from "@/components/providers";
-import { EmptyState, PageHeading, StatusBadge } from "@/components/ui";
+import { EmptyState, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 type Policy = {
   name: string;
@@ -71,12 +71,22 @@ export default function DashboardPage() {
     metric = data?.selectedMetric;
   return (
     <AppShell>
-      <PageHeading
-        eyebrow={`YOUR WORKSPACE${user?.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}`}
-        title="A clearer view of your progress."
-        description="Track comparable results and follow every experiment through to its outcome."
-      />
-      <div className="panel" style={{ padding: 20, marginBottom: 24 }}>
+      <section className="dashboard-hero">
+        <div className="hero-topline">
+          <p className="eyebrow">YOUR RESEARCH, CONNECTED</p>
+          <span className="workspace-label"><span aria-hidden="true" /> Personal workspace</span>
+        </div>
+        <div className="hero-main">
+          <div>
+            <p className="hero-greeting">Welcome back{user?.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}.</p>
+            <h1>A clearer view.<br /><span>A better next experiment.</span></h1>
+            <p className="heading-copy">Your models, experiments, and discoveries. One place to move them forward.</p>
+          </div>
+          <Link className="primary-button" href="/experiments"><Plus size={16} /> New experiment</Link>
+        </div>
+        <div className="hero-footer"><FlaskConical size={14} aria-hidden="true" /><span>Every experiment moves the work forward.</span><Link href="/runs">Explore runs <ArrowUpRight size={14} /></Link></div>
+      </section>
+      <div className="experiment-context">
         <label className="field">
           <span>Experiment for scores and trends</span>
           <select
@@ -120,18 +130,18 @@ export default function DashboardPage() {
           </div>
           <ol>
             <li>
-              <Link href="/projects">01 · Create a project</Link>
+              <Link href="/projects"><span className="step-index">01</span>Create a project<ArrowUpRight size={14} /></Link>
             </li>
             <li>
-              <Link href="/models">02 · Register a model and version</Link>
+              <Link href="/models"><span className="step-index">02</span>Register a model and version<ArrowUpRight size={14} /></Link>
             </li>
             <li>
               <Link href="/experiments">
-                03 · Define an experiment and scoring policy
+                <span className="step-index">03</span>Define an experiment and scoring policy<ArrowUpRight size={14} />
               </Link>
             </li>
             <li>
-              <Link href="/runs">04 · Log a run and its metrics</Link>
+              <Link href="/runs"><span className="step-index">04</span>Log a run and its metrics<ArrowUpRight size={14} /></Link>
             </li>
           </ol>
         </section>
@@ -168,7 +178,7 @@ export default function DashboardPage() {
           <article className="metric-card" key={label}>
             <div className="metric-label">
               <span>{label}</span>
-              <Icon size={16} />
+              <span className="metric-symbol"><Icon size={17} /></span>
             </div>
             <div className="metric-value">
               {query.isPending ? "…" : (value ?? "—")}
@@ -206,11 +216,12 @@ export default function DashboardPage() {
         <article className="panel">
           <div className="panel-header">
             <h2 className="panel-title">Recent runs</h2>
-            <Link href="/runs">View all</Link>
+            <Link href="/runs">View all <ArrowUpRight size={13} /></Link>
           </div>
           <div className="run-list">
             {data?.recentRuns.map((run) => (
               <div className="run-row" key={run.id}>
+                <span className="run-icon"><CircleGauge size={16} /></span>
                 <div>
                   <Link className="run-name" href={`/runs/${run.id}`}>
                     {run.name}

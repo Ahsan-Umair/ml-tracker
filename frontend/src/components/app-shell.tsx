@@ -17,6 +17,7 @@ import {
   Trophy,
   Search,
   ChevronRight,
+  Command,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { Modal } from "./ui";
@@ -106,6 +107,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </a>
       <aside className="sidebar">
         <Brand />
+        <div className="workspace-identity">
+          <span className="workspace-monogram" aria-hidden="true">ML</span>
+          <div><strong>Research workspace</strong><span>Personal environment</span></div>
+        </div>
         <div className="nav-group-label">Workspace</div>
         <nav>
           {nav.map(({ label, icon: Icon, href }) => (
@@ -117,6 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Icon size={16} />
               <span>{label}</span>
+              <ChevronRight className="nav-indicator" size={13} aria-hidden="true" />
             </Link>
           ))}
         </nav>
@@ -131,6 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Icon size={16} />
               <span>{label}</span>
+              <ChevronRight className="nav-indicator" size={13} aria-hidden="true" />
             </Link>
           ))}
         </nav>
@@ -143,6 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="run-name">{user.displayName}</div>
             <div className="run-meta">Personal workspace</div>
           </div>
+          <Settings2 className="profile-settings" size={15} aria-hidden="true" />
         </button>
       </aside>
       <main className="main" id="main-content" tabIndex={-1}>
@@ -176,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-actions">
             <button
               type="button"
-              className="icon-button"
+              className="workspace-search"
               aria-label="Search navigation"
               title="Search navigation (Ctrl+K or ⌘K)"
               onClick={() => {
@@ -185,6 +193,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }}
             >
               <Search size={18} />
+              <span>Search workspace</span>
+              <kbd><Command size={11} aria-hidden="true" /> K</kbd>
             </button>
             <ThemeButton />
             <button

@@ -12,7 +12,7 @@
 }
 .toolbar {
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .filters {
   flex: 1;
@@ -20,12 +20,13 @@
 .filters input,
 .filters select,
 .toolbar select {
-  min-height: 40px;
-  border: 1px solid var(--line, #dfe5de);
-  border-radius: 8px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
   padding: 8px 12px;
-  background: var(--surface, #fff);
+  background: var(--surface);
   color: inherit;
+  font-size: 12px;
 }
 .filters input {
   min-width: 180px;
@@ -36,7 +37,8 @@
 .pagination {
   justify-content: space-between;
   padding: 18px 0;
-  color: var(--muted, #58665c);
+  color: var(--muted);
+  font-size: 12px;
 }
 .pagination button:disabled {
   opacity: 0.45;
@@ -48,13 +50,29 @@
   gap: 18px;
 }
 .card {
-  padding: 22px;
+  padding: 23px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 13px;
+  transition: border-color 160ms ease;
 }
+.card:hover { border-color: var(--focus); }
+.resourceSymbol {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-right: auto;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+  color: var(--accent);
+}
+.resourceSymbol svg { stroke-width: 1.5; }
 .card h2 {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 550;
+  letter-spacing: -.4px;
   margin: 0;
   line-height: 1.5;
 }
@@ -63,24 +81,26 @@
   text-decoration: underline;
 }
 .help {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.6;
-  color: var(--muted, #58665c);
+  color: var(--muted);
 }
 .summary {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.7;
+  font-size: 12px;
+  color: var(--muted);
 }
 .tags {
   gap: 6px;
 }
 .tag {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.6;
-  background: var(--surface-soft, #f4f6f1);
-  border: 1px solid var(--line, #dfe5de);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
   border-radius: 20px;
   padding: 2px 9px;
 }
@@ -92,7 +112,7 @@
 .meta dt,
 .definition dt {
   font-size: 12px;
-  color: var(--muted, #58665c);
+  color: var(--muted);
   margin-bottom: 5px;
 }
 .meta dd,
@@ -103,14 +123,15 @@
 .cardFooter {
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid var(--line, #dfe5de);
+  border-top: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  font-size: 12px;
 }
 .editor {
-  border: 1px solid var(--line, #dfe5de);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 16px;
   display: grid;
@@ -129,7 +150,7 @@
 .notice {
   padding: 14px;
   border-radius: 9px;
-  background: var(--surface-soft, #f4f6f1);
+  background: var(--surface-soft);
   line-height: 1.7;
 }
 .notice a {
@@ -168,12 +189,12 @@
 .code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: var(--surface-soft, #f4f6f1);
+  background: var(--surface-soft);
   border-radius: 10px;
   padding: 16px;
   max-height: 380px;
   overflow: auto;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.7;
 }
 .table {
@@ -185,13 +206,13 @@
 .table td {
   padding: 13px;
   text-align: left;
-  border-bottom: 1px solid var(--line, #dfe5de);
-  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
   vertical-align: top;
 }
 .table th {
   font-size: 12px;
-  color: var(--muted, #58665c);
+  color: var(--muted);
 }
 .scroll {
   overflow: auto;
@@ -200,27 +221,27 @@
   width: 100%;
   height: auto;
   min-height: 210px;
-  color: var(--muted, #58665c);
+  color: var(--muted);
 }
 .chart text {
   fill: currentColor;
   font-size: 12px;
 }
 .chart line {
-  stroke: var(--line, #dfe5de);
+  stroke: var(--line);
 }
 .chartGrid {
   display: grid;
   gap: 14px;
 }
 .link {
-  color: var(--accent, #27785f);
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 550;
 }
 .crumb {
   font-size: 13px;
   margin: 0 0 18px;
-  color: var(--muted, #58665c);
+  color: var(--muted);
 }
 .crumb a {
   text-decoration: underline;
@@ -232,6 +253,8 @@
 .header h1 {
   font-size: clamp(24px, 4vw, 36px);
   margin: 8px 0;
+  font-weight: 550;
+  letter-spacing: -1.2px;
 }
 .header p {
   max-width: 700px;
@@ -245,7 +268,7 @@
 .check input {
   width: 17px;
   height: 17px;
-  accent-color: #27785f;
+  accent-color: var(--accent);
 }
 .compareSticky {
   position: sticky;
@@ -306,7 +329,7 @@
 .policy span {
   font-size: 12px;
   padding: 4px 9px;
-  border: 1px solid var(--line, #dfe5de);
+  border: 1px solid var(--line);
   border-radius: 7px;
 }
 .versionList {
@@ -314,12 +337,14 @@
   gap: 14px;
 }
 .version {
-  border: 1px solid var(--line, #dfe5de);
+  border: 1px solid var(--line);
   padding: 18px;
-  border-radius: 10px;
+  border-radius: 11px;
+  background: var(--surface);
 }
 .version strong {
-  font-size: 16px;
+  font-size: 14px;
+  font-family: var(--font-mono), monospace;
 }
 .version a {
   overflow-wrap: anywhere;
@@ -339,13 +364,13 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--line, #dfe5de);
+  border-bottom: 1px solid var(--line);
 }
 .metricValue {
   font-variant-numeric: tabular-nums;
 }
 .danger {
-  color: #a0382b;
+  color: var(--error-text);
 }
 .selectMany {
   display: flex;
@@ -354,14 +379,25 @@
 }
 .selectMany label {
   padding: 9px 12px;
-  border: 1px solid var(--line, #dfe5de);
+  border: 1px solid var(--line);
   border-radius: 8px;
 }
 .selectMany input {
   margin-right: 7px;
 }
 .muted {
-  color: var(--muted, #58665c);
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .grid { animation: resource-enter 380ms var(--ease-out) backwards; }
+}
+@keyframes resource-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grid { animation: none; }
+  .card { transition: none; }
 }
 @media (max-width: 800px) {
   .detailGrid {

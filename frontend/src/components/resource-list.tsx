@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Boxes, BrainCircuit, Database, FlaskConical, Play } from "lucide-react";
 import { useAuth, useWorkspaceQuery } from "@/components/providers";
 import { AppShell } from "@/components/app-shell";
 import { Modal, PageHeading, StatusBadge } from "@/components/ui";
@@ -30,6 +31,7 @@ const pageSize = 25;
 
 export function ResourceList({ kind }: { kind: ResourceKind }) {
   const labels = resourceLabels[kind];
+  const ResourceIcon = { projects: Boxes, models: BrainCircuit, datasets: Database, experiments: FlaskConical, runs: Play }[kind];
   const params = useSearchParams();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -292,6 +294,7 @@ export function ResourceList({ kind }: { kind: ResourceKind }) {
         {rows.map((item) => (
           <article key={item.id} className={`panel ${styles.card}`}>
             <div className={styles.statusRow}>
+              <span className={styles.resourceSymbol} aria-hidden="true"><ResourceIcon size={19} /></span>
               {item.status && <StatusBadge value={item.status} />}
               {item.archived && <StatusBadge value="archived" />}
               {kind === "runs" && (
