@@ -723,7 +723,7 @@ export function ResourceForm({
           placeholder="baseline, vision, seed-42"
         />
       </Field>
-      <SubmitButton pending={mutation.isPending || !!missingParent}>
+      <SubmitButton pending={mutation.isPending} disabled={!!missingParent}>
         {item
           ? "Save changes"
           : `Create ${kind === "datasets" ? "dataset reference" : kind.slice(0, -1)}`}
