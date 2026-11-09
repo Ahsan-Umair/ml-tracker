@@ -440,7 +440,7 @@ export function ResourceForm({
           <input
             name="color"
             type="color"
-            defaultValue={item?.color || "#27785f"}
+            defaultValue={item?.color || "#717b90"}
           />
         </Field>
       )}

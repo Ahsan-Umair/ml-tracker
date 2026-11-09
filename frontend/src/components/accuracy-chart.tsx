@@ -41,8 +41,8 @@ export default function MetricTrend({
       >
         <defs>
           <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
-            <stop stopColor="#2c8067" stopOpacity=".2" />
-            <stop offset="1" stopColor="#2c8067" stopOpacity="0" />
+            <stop stopColor="var(--chart-1)" stopOpacity=".2" />
+            <stop offset="1" stopColor="var(--chart-1)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 0.5, 1].map((v) => (
@@ -68,11 +68,11 @@ export default function MetricTrend({
         <polyline
           points={line}
           fill="none"
-          stroke="#2c8067"
+          stroke="var(--chart-1)"
           strokeWidth="2.5"
         />
         {points.map((p) => (
-          <circle key={p.day} cx={p.x} cy={p.y} r="4" fill="#2c8067">
+          <circle key={p.day} cx={p.x} cy={p.y} r="4" fill="var(--chart-1)">
             <title>
               {p.day}: {format(p.value)}
             </title>

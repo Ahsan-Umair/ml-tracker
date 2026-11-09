@@ -13,7 +13,7 @@ import {
 } from "@/lib/workspace";
 import styles from "./resource-workspace.module.css";
 
-const colors = ["#27785f", "#a46a26", "#407eaf", "#9c59a8"];
+const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
 export type MetricSeries = { name: string; metrics: Metric[] };
 
 export function MetricCurve({

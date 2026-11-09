@@ -33,7 +33,7 @@ export function AuthFrame({
             THE EXPERIMENT SPACE <ArrowUpRight size={17} />
           </div>
           <svg viewBox="0 0 500 260" fill="none">
-            <g stroke="#354d43">
+            <g stroke="#343a46">
               {[100, 200, 300, 400].map((x) => (
                 <path key={x} d={`M${x} 12v220`} />
               ))}
@@ -57,12 +57,12 @@ export function AuthFrame({
             </g>
             <path
               d="M65 213C135 200 116 137 194 162S270 67 332 98S389 50 443 51"
-              stroke="#c5f194"
+              stroke="#dce1eb"
               strokeWidth="2.5"
             />
             <path
               d="M65 213Q170 60 260 165T443 100"
-              stroke="#72897c"
+              stroke="#768196"
               strokeDasharray="5 7"
             />
             {[
@@ -76,11 +76,11 @@ export function AuthFrame({
                   cx={x}
                   cy={y}
                   r="6"
-                  fill="#c5f194"
-                  stroke="#203b30"
+                  fill="#dce1eb"
+                  stroke="#171a20"
                   strokeWidth="3"
                 />
-                <text x={x - 5} y={y - 17} fill="#b3c6bb" fontSize="10">
+                <text x={x - 5} y={y - 17} fill="#9ba6bb" fontSize="10">
                   0{i + 1}
                 </text>
               </g>
