@@ -60,12 +60,14 @@ export function ThemeButton() {
   return (
     <button
       type="button"
-      className="icon-button"
+      className="icon-button theme-toggle"
       aria-label={`Use ${next} theme`}
       title={`Use ${next} theme`}
       onClick={changeTheme}
     >
-      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      <span className="theme-symbol" key={theme} aria-hidden="true">
+        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      </span>
     </button>
   );
 }
