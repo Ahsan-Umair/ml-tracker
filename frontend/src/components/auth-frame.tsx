@@ -56,6 +56,8 @@ export function AuthFrame({
               ))}
             </g>
             <path
+              className="auth-trace"
+              pathLength="1"
               d="M65 213C135 200 116 137 194 162S270 67 332 98S389 50 443 51"
               stroke="#dce1eb"
               strokeWidth="2.5"

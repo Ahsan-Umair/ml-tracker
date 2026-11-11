@@ -883,6 +883,19 @@ tbody tr:hover {
 }
 /* Short, finite effects. No permanent compositing layers or animation library. */
 @media (prefers-reduced-motion: no-preference) {
+  .auth-story-copy {
+    animation: lab-enter 420ms 40ms var(--ease-out) backwards;
+  }
+  .research-figure {
+    animation: lab-backdrop-enter 400ms 100ms ease-out backwards;
+  }
+  .auth-trace {
+    animation: lab-line-draw 800ms 180ms var(--ease-out) backwards;
+  }
+  .dashboard-hero::before {
+    transform-origin: center;
+    animation: lab-orbit-enter 600ms ease-out;
+  }
   .theme-symbol {
     animation: lab-theme-icon 260ms var(--ease-out);
   }
@@ -1016,6 +1029,10 @@ tbody tr:hover {
 }
 @keyframes lab-theme-icon {
   from { opacity: 0; transform: rotate(-35deg) scale(.75); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lab-orbit-enter {
+  from { opacity: 0; transform: scale(.92); }
   to { opacity: 1; transform: none; }
 }
 @keyframes lab-button-sheen {
