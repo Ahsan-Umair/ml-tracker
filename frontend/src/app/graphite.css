@@ -107,6 +107,7 @@ button[aria-busy="true"] {
   margin-bottom: 28px;
 }
 .nav-link {
+  position: relative;
   min-height: 43px;
   border-radius: 8px;
   padding: 11px 13px;
@@ -114,6 +115,19 @@ button[aria-busy="true"] {
   color: #a7afbd;
   font-size: 12px;
   border: 1px solid transparent;
+}
+.sidebar .nav-link::before {
+  content: "";
+  position: absolute;
+  inset: 10px auto 10px -1px;
+  width: 2px;
+  border-radius: 2px;
+  background: #c7d0e0;
+  transform: scaleY(0);
+  pointer-events: none;
+}
+.sidebar .nav-link.active::before {
+  transform: scaleY(1);
 }
 .nav-link svg {
   stroke-width: 1.65;
@@ -127,7 +141,6 @@ button[aria-busy="true"] {
   color: #f4f6fb;
   border-color: #ffffff17;
   font-weight: 550;
-  box-shadow: inset 2px 0 0 #c7d0e0;
 }
 .nav-indicator {
   margin-left: auto;
@@ -733,6 +746,9 @@ tbody tr:hover {
 .command-list a svg {
   color: var(--muted);
 }
+.command-list a:focus-visible {
+  background: var(--surface-soft);
+}
 .workspace-loading {
   font-size: 12px;
 }
@@ -876,6 +892,21 @@ tbody tr:hover {
   .metric-card, .metric-symbol {
     transition: transform 180ms var(--ease-out), border-color 160ms ease;
   }
+  .sidebar .nav-link::before {
+    transition: transform 180ms var(--ease-out);
+  }
+  .sidebar .nav-link.active::before {
+    animation: lab-nav-select 220ms var(--ease-out);
+  }
+  .nav-link > svg, .command-list a > svg {
+    transition: transform 160ms var(--ease-out), opacity 160ms ease;
+  }
+  .nav-indicator {
+    transform: translateX(-4px);
+  }
+  .nav-link.active .nav-indicator {
+    transform: none;
+  }
   .primary-button:active:not(:disabled), .secondary-button:active:not(:disabled), .icon-button:active:not(:disabled) {
     transform: scale(.98);
   }
@@ -908,6 +939,10 @@ tbody tr:hover {
     opacity: 1;
   }
 }
+@keyframes lab-nav-select {
+  from { transform: scaleY(.25); }
+  to { transform: scaleY(1); }
+}
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .metric-card:hover {
     transform: translateY(-3px);
@@ -919,8 +954,15 @@ tbody tr:hover {
   .primary-button:hover:not(:disabled), .secondary-button:hover:not(:disabled) {
     transform: translateY(-1px);
   }
-  .sidebar .nav-link:hover {
+  .sidebar .nav-link:hover > svg:first-child {
     transform: translateX(2px);
+  }
+  .nav-link:hover .nav-indicator {
+    opacity: .8;
+    transform: none;
+  }
+  .command-list a:hover > svg:last-child {
+    transform: translateX(3px);
   }
 }
 @media (min-width: 1600px) {
