@@ -750,7 +750,26 @@ tbody tr:hover {
   background: var(--surface-soft);
 }
 .workspace-loading {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 10px;
   font-size: 12px;
+}
+.workspace-loading::before, .workspace-loading::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.workspace-loading::before {
+  background: var(--line);
+}
+.workspace-loading::after {
+  width: 38%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
 }
 .auth-page {
   background: var(--canvas);
@@ -860,6 +879,13 @@ tbody tr:hover {
 }
 /* Short, finite effects. No permanent compositing layers or animation library. */
 @media (prefers-reduced-motion: no-preference) {
+  /* Stop decorative loading motion after 3.6s, even on a stalled connection. */
+  .workspace-loading::after {
+    animation: lab-loading-pass 1200ms ease-in-out 3;
+  }
+  .error-notice, .success-notice, .action-error, .workspace-notice {
+    animation: lab-notice-enter 180ms var(--ease-out);
+  }
   /* A single short SVG stroke reveal; never animate axes or chart layout. */
   .trend-line {
     animation: lab-line-draw 650ms 80ms var(--ease-out) backwards;
@@ -971,6 +997,15 @@ tbody tr:hover {
 @keyframes lab-bar-grow {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+@keyframes lab-loading-pass {
+  from { transform: translateX(-100%); opacity: 0; }
+  15%, 85% { opacity: .7; }
+  to { transform: translateX(270%); opacity: 0; }
+}
+@keyframes lab-notice-enter {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes lab-button-sheen {
   from { opacity: 0; transform: translateX(-200%) skewX(-18deg); }
