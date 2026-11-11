@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.png",
+        url: "/og.png?v=logo-1",
         width: 1200,
         height: 630,
         alt: "Model Lab — ML experiment tracking workspace",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Model Lab",
     description: "Track models, experiments, runs & metrics.",
-    images: ["/og.png"],
+    images: ["/og.png?v=logo-1"],
   },
 };
 
