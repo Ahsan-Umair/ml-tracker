@@ -62,22 +62,27 @@ export default function MetricTrend({
           </g>
         ))}
         <polygon
+          className="trend-area"
           points={`${points[0].x},185 ${line} ${points.at(-1)!.x},185`}
           fill={`url(#${id})`}
         />
         <polyline
+          className="trend-line"
+          pathLength="1"
           points={line}
           fill="none"
           stroke="var(--chart-1)"
           strokeWidth="2.5"
         />
-        {points.map((p) => (
-          <circle key={p.day} cx={p.x} cy={p.y} r="4" fill="var(--chart-1)">
-            <title>
-              {p.day}: {format(p.value)}
-            </title>
-          </circle>
-        ))}
+        <g className="trend-points">
+          {points.map((p) => (
+            <circle key={p.day} cx={p.x} cy={p.y} r="4" fill="var(--chart-1)">
+              <title>
+                {p.day}: {format(p.value)}
+              </title>
+            </circle>
+          ))}
+        </g>
         <text x="85" y="218" fill="currentColor" fontSize="12">
           {trend[0].day}
         </text>

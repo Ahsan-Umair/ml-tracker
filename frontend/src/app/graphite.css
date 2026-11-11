@@ -858,8 +858,26 @@ tbody tr:hover {
 .loading-screen .brand-mark {
   color: #e4e8f1;
 }
-/* Only a handful of finite animations. No permanent compositing layers. */
+/* Short, finite effects. No permanent compositing layers or animation library. */
 @media (prefers-reduced-motion: no-preference) {
+  /* A single short SVG stroke reveal; never animate axes or chart layout. */
+  .trend-line {
+    animation: lab-line-draw 650ms 80ms var(--ease-out) backwards;
+  }
+  .trend-area {
+    animation: lab-backdrop-enter 400ms 180ms ease-out backwards;
+  }
+  .trend-points {
+    animation: lab-backdrop-enter 200ms 400ms ease-out backwards;
+  }
+  .bar-track > div {
+    transform-origin: left center;
+    animation: lab-bar-grow 500ms 80ms var(--ease-out) backwards;
+  }
+  .bar-chart li:nth-child(2) .bar-track > div { animation-delay: 110ms; }
+  .bar-chart li:nth-child(3) .bar-track > div { animation-delay: 140ms; }
+  .bar-chart li:nth-child(4) .bar-track > div { animation-delay: 170ms; }
+  .bar-chart li:nth-child(n + 5) .bar-track > div { animation: none; }
   .workspace-content > .dashboard-hero,
   .workspace-content > .page-heading,
   .auth-box {
@@ -945,6 +963,14 @@ tbody tr:hover {
 @keyframes lab-nav-select {
   from { transform: scaleY(.25); }
   to { transform: scaleY(1); }
+}
+@keyframes lab-line-draw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+@keyframes lab-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 @keyframes lab-button-sheen {
   from { opacity: 0; transform: translateX(-200%) skewX(-18deg); }
