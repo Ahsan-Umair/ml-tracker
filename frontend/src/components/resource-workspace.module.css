@@ -50,13 +50,24 @@
   gap: 18px;
 }
 .card {
+  position: relative;
   padding: 23px;
   display: flex;
   flex-direction: column;
   gap: 13px;
   transition: border-color 160ms ease;
 }
-.card:hover { border-color: var(--focus); }
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -1px 24px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--focus), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.card:focus-within { border-color: var(--focus); }
+.card:focus-within::before { opacity: 1; }
 .resourceSymbol {
   display: grid;
   place-items: center;
@@ -389,7 +400,28 @@
   color: var(--muted);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .grid { animation: resource-enter 380ms var(--ease-out) backwards; }
+  /* Animate at most six cards; long result lists don't create dozens of layers. */
+  .card:nth-child(-n + 6) {
+    animation: resource-enter 340ms var(--ease-out) backwards;
+  }
+  .card:nth-child(2) { animation-delay: 30ms; }
+  .card:nth-child(3) { animation-delay: 60ms; }
+  .card:nth-child(4) { animation-delay: 90ms; }
+  .card:nth-child(5) { animation-delay: 120ms; }
+  .card:nth-child(6) { animation-delay: 150ms; }
+  .card {
+    transition: transform 180ms var(--ease-out), border-color 160ms ease;
+  }
+  .card::before { transition: opacity 180ms ease; }
+  .resourceSymbol { transition: transform 180ms var(--ease-out); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { border-color: var(--focus); }
+  .card:hover::before { opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .card:hover { transform: translateY(-3px); }
+  .card:hover .resourceSymbol { transform: translateY(-2px) rotate(-4deg); }
 }
 @keyframes resource-enter {
   from { opacity: 0; transform: translateY(7px); }
