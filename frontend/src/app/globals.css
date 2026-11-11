@@ -122,24 +122,7 @@ textarea {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 26px;
-  letter-spacing: -1.4px;
-  font-weight: 750;
   line-height: 1;
-}
-.brand-mark {
-  width: 35px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  color: var(--silver);
-}
-.brand-light {
-  font-weight: 400;
-}
-.brand-period {
-  color: var(--silver);
 }
 .eyebrow,
 .section-tag {
@@ -715,10 +698,6 @@ tbody tr:hover {
   justify-content: center;
   gap: 18px;
   background: var(--canvas);
-}
-.loading-screen .brand-mark,
-.loading-screen .brand-period {
-  color: var(--accent);
 }
 .loading-screen p {
   font-size: 15px;
@@ -1598,13 +1577,6 @@ tbody tr:hover {
     width: 100%;
     max-width: 385px;
     margin-bottom: 45px;
-  }
-  .auth-mobile-brand .brand {
-    font-size: 24px;
-  }
-  .auth-mobile-brand .brand-mark,
-  .auth-mobile-brand .brand-period {
-    color: var(--accent);
   }
   .auth-box {
     margin: 0;
